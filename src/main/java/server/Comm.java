@@ -44,20 +44,22 @@ class CommServer {
         return true;
     }
 
-    String recv(){
-        String msg=null;
-        if (in == null) { return null; }
-        try{
-          msg=in.readLine();
-        } catch (SocketTimeoutException e){
-//          System.err.println("�����ॢ���ȤǤ���");
-          return null;
-        } catch (IOException e) {
-          System.err.println("�����˼��Ԥ��ޤ�����");
-          System.exit(1);
-        }
-        return msg;
+    String recv() {
+    String msg = null;
+    if (in == null) {
+        return null;
     }
+    try {
+        msg = in.readLine();
+        if (msg == null || msg.trim().isEmpty()) {
+            return null;
+        }
+    } catch (IOException e) {
+        System.err.println("受信エラー: " + e.getMessage());
+    }
+    return msg;
+}
+
 
     int setTimeout(int to){
         try{
@@ -69,17 +71,29 @@ class CommServer {
         return to;
     }
 
-    void close(){
-      try{
-        in.close();  out.close();
-        clientS.close();  serverS.close();
-      } catch (IOException e) {
-          System.err.println("�����åȤΥ��������˼��Ԥ��ޤ�����");
-          System.exit(1);
-      }
-      in=null; out=null;
-      clientS=null; serverS=null;
+    void close() {
+    try {
+        if (in != null) {
+            in.close();
+        }
+        if (out != null) {
+            out.close();
+        }
+        if (clientS != null) {
+            clientS.close();
+        }
+        if (serverS != null) {
+            serverS.close();
+        }
+    } catch (IOException e) {
+        System.err.println("クローズ処理中にエラーが発生しました: " + e.getMessage());
     }
+    in = null;
+    out = null;
+    clientS = null;
+    serverS = null;
+}
+
 }
 
 class CommClient {
