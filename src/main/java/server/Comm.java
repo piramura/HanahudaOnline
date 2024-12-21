@@ -87,11 +87,12 @@ class CommServer {
         }
     } catch (IOException e) {
         System.err.println("クローズ処理中にエラーが発生しました: " + e.getMessage());
+    }finally {
+        in = null;
+        out = null;
+        clientS = null;
+        serverS = null;
     }
-    in = null;
-    out = null;
-    clientS = null;
-    serverS = null;
 }
 
 }

@@ -39,13 +39,20 @@ class ServerThread extends Thread {
          // Renderのヘルスチェックリクエストを無視する
         
         while ((message = client.recv()) != null) {
-            if (message.startsWith("HEAD")) {
-            System.out.println("Renderのヘルスチェックリクエストを無視しました。");
-            continue;  // 次のリクエスト処理に進む
-        }
+             // メッセージが無視されるべきもの（null）か確認
+            if (message.trim().isEmpty()) {
+                continue; // 空のメッセージを無視
+            }
+
+            if (message.startsWith("HEAD /")) {
+                System.out.println("ヘルスチェックリクエストを無視しました。");
+                continue; // ヘルスチェックを無視
+            }
+
             System.out.println("受信 [" + clientIndex + "]: " + message);
             MultiThreadServer.serverManager.processMessage(clientIndex, message);
-        }
+            }
+        
         client.close();  // 接続終了
         MultiThreadServer.serverManager.removeClient(clientIndex); // クライアント削除
     }
