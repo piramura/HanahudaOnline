@@ -4,8 +4,8 @@ import java.io.*;
 class CommServer {
     private ServerSocket serverS = null;
     private Socket clientS = null;
-    private PrintWriter out = null;
-    private BufferedReader in = null;
+    private OutputStream out = null;
+    private InputStream in = null;
     private int port=0;
 
     CommServer() {}
@@ -15,50 +15,54 @@ class CommServer {
     ServerSocket getServerSocket() { return serverS; } 
     int getPortNo() { return port; }
 
-    boolean open(int port){
-      this.port=port;
-      try{ 
-	 if (serverS == null) {
-    //  serverS = new ServerSocket(port); 
-     // すべてのインターフェースで接続待機
+    boolean open(int port) {
+        this.port = port;
+        try {
+            if (serverS == null) {
                 serverS = new ServerSocket(port, 50, InetAddress.getByName("0.0.0.0"));
-   }
-      } catch (IOException e) {
-         System.err.println("�ݡ��Ȥ˥��������Ǥ��ޤ���");
-         System.exit(1);
-      }
-      try{
-         clientS = serverS.accept();
-         out = new PrintWriter(clientS.getOutputStream(), true);
-         in = new BufferedReader(new InputStreamReader(clientS.getInputStream()));
-      } catch (IOException e) {
-         System.err.println("Accept�˼��Ԥ��ޤ�����");
-         System.exit(1);
-      }
-      return true;
-    }
-
-    boolean send(String msg){
-        if (out == null) { return false; }
-        out.println(msg);
+            }
+        } catch (IOException e) {
+            System.err.println("サーバーソケットの作成に失敗しました: " + e.getMessage());
+            System.exit(1);
+        }
+        try {
+            clientS = serverS.accept();
+            out = clientS.getOutputStream();
+            in = clientS.getInputStream();
+        } catch (IOException e) {
+            System.err.println("クライアント接続の受け入れに失敗しました: " + e.getMessage());
+            System.exit(1);
+        }
         return true;
     }
 
+   boolean send(String msg) {
+        try {
+            if (out != null) {
+                out.write((msg + "\n").getBytes());
+                out.flush();
+                return true;
+            }
+        } catch (IOException e) {
+            System.err.println("送信エラー: " + e.getMessage());
+        }
+        return false;
+    }
+
     String recv() {
-    String msg = null;
-    if (in == null) {
+        try {
+            if (in != null) {
+                byte[] buffer = new byte[1024];
+                int bytesRead = in.read(buffer);
+                if (bytesRead > 0) {
+                    return new String(buffer, 0, bytesRead).trim();
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("受信エラー: " + e.getMessage());
+        }
         return null;
     }
-    try {
-        msg = in.readLine();
-        if (msg == null || msg.trim().isEmpty()) {
-            return null;
-        }
-    } catch (IOException e) {
-        System.err.println("受信エラー: " + e.getMessage());
-    }
-    return msg;
-}
 
 
     int setTimeout(int to){
@@ -72,28 +76,20 @@ class CommServer {
     }
 
     void close() {
-    try {
-        if (in != null) {
-            in.close();
+        try {
+            if (in != null) in.close();
+            if (out != null) out.close();
+            if (clientS != null) clientS.close();
+            if (serverS != null) serverS.close();
+        } catch (IOException e) {
+            System.err.println("クローズ処理中にエラーが発生しました: " + e.getMessage());
         }
-        if (out != null) {
-            out.close();
-        }
-        if (clientS != null) {
-            clientS.close();
-        }
-        if (serverS != null) {
-            serverS.close();
-        }
-    } catch (IOException e) {
-        System.err.println("クローズ処理中にエラーが発生しました: " + e.getMessage());
-    }finally {
         in = null;
         out = null;
         clientS = null;
         serverS = null;
     }
-}
+
 
 }
 
