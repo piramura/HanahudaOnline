@@ -1,5 +1,5 @@
 # JDK 23 の軽量ベースイメージを使用
-FROM eopenjdk:23-jdk
+FROM openjdk:23-jdk
 
 # 作業ディレクトリを設定
 WORKDIR /app
