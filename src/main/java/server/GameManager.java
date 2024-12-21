@@ -139,7 +139,8 @@ public class GameManager {
         Player player = game.getPlayers().get(playerIndex);
         Card playedCard = player.playCard(cardIndex);
         game.playTurn(player, playedCard);
-
+        // ゲーム状態を送信
+    MultiThreadServer.serverManager.broadcastGameState();
         nextTurn();
         return "プレイヤー " + (playerIndex + 1) + " がカードをプレイしました。\n" + getGameState();
     }
@@ -152,6 +153,8 @@ public class GameManager {
     // 次のターンへ進む
     private void nextTurn() {
         currentPlayerIndex = (currentPlayerIndex + 1) % game.getPlayers().size();
+        // サーバーに現在の状態を送信
+    MultiThreadServer.serverManager.broadcastGameState();
     }
 
     public String getPlayerGameState(int playerIndex) {

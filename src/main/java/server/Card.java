@@ -6,12 +6,17 @@ public class Card{
     private final Point point; // 種別（光、短冊、カスなど）
     private final List<Role> roles; // 複数の役を持つ
 	private boolean isInPlay;// カードが場にあるかどうか
+    private int id; // 一意のID
 
 	// コンストラクタ
-    public Card(Month month, Point point) {
+    public Card(int id,Month month, Point point) {
         this.month = month;
         this.point = point;
         this.roles = new ArrayList<>();
+        this.id = id;
+    }
+    public int getId() {
+        return id;
     }
     // ゲッター
     public Month getMonth() {
