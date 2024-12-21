@@ -1,5 +1,5 @@
 # JDK 23 の軽量ベースイメージを使用
-FROM eclipse-temurin:23-jdk-slim
+FROM eclipse-temurin:17-jdk-slim
 
 # 作業ディレクトリを設定
 WORKDIR /app
