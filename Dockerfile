@@ -1,11 +1,11 @@
 # JDK 23 の軽量ベースイメージを使用
-FROM eclipse-temurin:17-jdk-slim
+FROM eclipse-temurin:17-jdk
 
 # 作業ディレクトリを設定
 WORKDIR /app
 
 # JAR ファイルをコンテナにコピー
-COPY hanahudaonline.jar app.jar
+COPY hanahuda-online.jar app.jar
 
 # 必要なポートを公開（アプリケーションで使用するポート）
 EXPOSE 10030
