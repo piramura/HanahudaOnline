@@ -93,6 +93,9 @@ public class GameStateManager {
     public void setGameOver(boolean gameOver) {
         this.isGameOver = gameOver;
     }
+    public void setCurrentPlayer(int currentPlayer){
+        this.currentPlayer = currentPlayer;
+    }
     public void updateOpponentHandCount(int count) {
     opponentHand.clear();
     for (int i = 0; i < count; i++) {

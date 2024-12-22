@@ -13,7 +13,6 @@ public class GameController {
     }
     public void setCurrentTurn(int currentturn) {
         this.currentturn = currentturn;
-        updateTurn(currentturn);
     }
     public GameController(MainFrame frame, CommClient client) {
         this.mainFrame = frame;
@@ -61,14 +60,12 @@ public void handleGameOver() {
 
         mainFrame.repaint();
     }
+    public void updateTurnInfo(int currentPlayer) {
+    // UIのターン表示を更新
+    mainFrame.updateTurnLabel(currentPlayer );
+    gameStateManager.setCurrentPlayer(currentPlayer);
+}
 
-    // カードクリック時の処理
-    private void handleCardClick(int cardID) {
-        System.out.println("Clicked card ID: " + cardID);
-        sendCardClickToServer(cardID);
-        gameStateManager.nextTurn();
-        updateUI();
-    }
     // GameController.java
 public void handleCardClick(Card card) {
     try {
@@ -125,7 +122,7 @@ public void addCardToArea(int cardID, String area) {
     }
 }
 public void updateTurn(int turn) {
-    mainFrame.updateTurnInfo(turn);
+    mainFrame.updateTurnLabel(turn);
     System.out.println("ターンが更新されました: currentturn " + turn);
 }
 public void updateOpponentHand(int count) {

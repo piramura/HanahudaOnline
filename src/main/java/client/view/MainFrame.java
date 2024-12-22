@@ -7,12 +7,16 @@
         private CardArea boardArea;       // 場のカード
         private CardArea playerHandArea; // プレイヤーの手札
         private CardArea opponentHandArea; // 相手の手札
+        private JFrame turnFrame;
         private JLabel turnLabel;
 
         public MainFrame() {
             // 初期化コード
+            turnFrame = new JFrame("ターン情報");
             turnLabel = new JLabel("ターン: プレイヤー 1");
-            add(turnLabel, BorderLayout.NORTH);
+            turnFrame.add(turnLabel, BorderLayout.CENTER);
+            turnFrame.pack();
+            turnFrame.setVisible(true);
             setTitle("Hanafuda Game");
             setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // 自動でウィンドウを閉じない
             setSize(800, 600);
@@ -32,12 +36,13 @@
             add(opponentHandArea, BorderLayout.NORTH);
             add(boardArea, BorderLayout.CENTER);
             add(playerHandArea, BorderLayout.SOUTH);
-
         }
         // ターン情報を更新
-public void updateTurnInfo(int currentPlayer) {
-    turnLabel.setText("ターン: プレイヤー " + (currentPlayer + 1));
-}
+    public void updateTurnLabel(int currentPlayer) {
+        SwingUtilities.invokeLater(() -> {
+        turnLabel.setText("ターン: プレイヤー " + (currentPlayer + 1));
+    });
+    }
         private void handleWindowClose() {
             int confirm = JOptionPane.showConfirmDialog(
                 this,
