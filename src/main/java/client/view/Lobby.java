@@ -25,20 +25,24 @@ public class Lobby extends JFrame {
         setVisible(true);
     }
 
-    // オンライン対戦開始
-    private void startOnlineMatch() {
-        System.out.println("オンライン対戦開始");
+   // オンライン対戦開始
+private void startOnlineMatch() {
+    System.out.println("オンライン対戦開始");
 
-        // MultiClientを別スレッドで実行
-        new Thread(() -> {
-            try {
-                MultiClient.main(new String[0]); // MultiClientのメインメソッドを呼び出す
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
-        }).start();
-        
-    }
+    // ボタンを無効化
+    onlineButton.setEnabled(false);
+
+    // MultiClientを別スレッドで実行
+    new Thread(() -> {
+        try {
+            MultiClient.main(new String[0]); // MultiClientのメインメソッドを呼び出す
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            // エラーが発生した場合、ボタンを再度有効化
+            SwingUtilities.invokeLater(() -> onlineButton.setEnabled(true));
+        }
+    }).start();
+}
 
     public static void main(String[] args) {
         new Lobby();

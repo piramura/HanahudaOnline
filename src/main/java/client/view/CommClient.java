@@ -2,31 +2,47 @@ import java.net.*;
 import java.io.*;
 
 class CommClient {
+    private static CommClient instance; // シングルトンインスタンス
     private Socket clientS = null;
     private InputStream in = null; // BufferedReader -> InputStream に変更
     private OutputStream out = null; // PrintWriter -> OutputStream に変更
 
-    CommClient() {}
-    CommClient(String host, int port) { open(host, port); }
-
-    boolean open(String host, int port) {
-        try {
-            clientS = new Socket(InetAddress.getByName(host), port);
-            if (clientS.isClosed()) {
-                throw new IOException("Socket が閉じられています。");
-            }
-            in = clientS.getInputStream();
-            out = clientS.getOutputStream();
-            System.out.println("接続成功: " + host + ":" + port);
-        } catch (UnknownHostException e) {
-            System.err.println("ホストが見つかりません: " + e.getMessage());
-            return false;
-        } catch (IOException e) {
-            System.err.println("接続に失敗しました: " + e.getMessage());
-            return false;
+    // プライベートコンストラクタ
+    private CommClient(String serverHost, int serverPort) throws IOException {
+        clientS = new Socket(InetAddress.getByName(serverHost), serverPort);
+        if (clientS.isClosed()) {
+            throw new IOException("Socket が閉じられています。");
         }
-        return true;
+        in = clientS.getInputStream();
+        out = clientS.getOutputStream();
+        System.out.println("接続成功: " + serverHost + ":" + serverPort);
     }
+
+    // シングルトンインスタンスの取得
+    public static synchronized CommClient getInstance(String serverHost, int serverPort) throws IOException {
+        if (instance == null || instance.clientS.isClosed()) {
+            instance = new CommClient(serverHost, serverPort);
+        }
+        return instance;
+    }
+    // boolean open(String host, int port) {
+    //     try {
+    //         clientS = new Socket(InetAddress.getByName(host), port);
+    //         if (clientS.isClosed()) {
+    //             throw new IOException("Socket が閉じられています。");
+    //         }
+    //         in = clientS.getInputStream();
+    //         out = clientS.getOutputStream();
+    //         System.out.println("接続成功: " + host + ":" + port);
+    //     } catch (UnknownHostException e) {
+    //         System.err.println("ホストが見つかりません: " + e.getMessage());
+    //         return false;
+    //     } catch (IOException e) {
+    //         System.err.println("接続に失敗しました: " + e.getMessage());
+    //         return false;
+    //     }
+    //     return true;
+    // }
 
     boolean send(String msg) {
         if (out == null) {
@@ -96,9 +112,6 @@ class CommClient {
         } catch (IOException e) {
             System.err.println("クローズ処理中にエラーが発生しました: " + e.getMessage());
         }
-    }
-    public boolean isConnected() {
-        return clientS != null && clientS.isConnected() && !clientS.isClosed();
     }
 
 }

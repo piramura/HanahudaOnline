@@ -54,6 +54,14 @@ class ServerThread extends Thread {
     private CommServer client;
     private int clientIndex;
     private MultiThreadServer server; // MultiThreadServer の参照を保持
+    private int playerNumber;
+    public int getPlayerNumber(){
+        return this.playerNumber;
+    }
+    public void setPlayerNumber(int number){
+        this.playerNumber = number;
+    }
+    
 
     public ServerThread(MultiThreadServer server, CommServer client, int clientIndex) {
         this.server = server;
@@ -84,6 +92,7 @@ class ServerThread extends Thread {
             while ((message = client.recv()) != null) {
                 if (message.trim().isEmpty()) continue;
                 System.out.println("受信 [" + clientIndex + "]: " + message);
+                System.out.println("プレイヤー " + playerNumber + " から受信: " + message);
                 MultiThreadServer.serverManager.processMessage(this, message);
             }
         } catch (Exception e) {
@@ -95,7 +104,12 @@ class ServerThread extends Thread {
     }
 
     public void sendMessage(String message) {
+        try {
         client.send(message); // メッセージ送信
+        System.out.println("送信先: クライアント " + clientIndex + " (プレイヤー " + playerNumber + ") | メッセージ: " + message);
+    } catch (Exception e) {
+        System.err.println("クライアント " + clientIndex + " へのメッセージ送信中にエラーが発生しました: " + e.getMessage());
+    }
     }
     public void close() {
         client.close();

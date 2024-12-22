@@ -5,20 +5,25 @@ public class ServerManager {
     private GameManager gameManager = new GameManager();
     private List<ServerThread> clients = new ArrayList<>();
     private int maxClients = 2;
+    
 
     // クライアントの追加
     public synchronized void addClient(ServerThread clientThread) {
         if (clients.size() >= maxClients) {
-             System.err.println("クライアントの追加に失敗しました: サーバーは満員です。");
-        try {
-            clientThread.sendMessage("FULL"); // クライアントに満員を通知
-            clientThread.close(); // 接続を切断
-        } catch (Exception e) {
-            System.err.println("接続を拒否する際にエラーが発生しました: " + e.getMessage());
+            clientThread.sendMessage("FULL"); // サーバーが満員の場合は通知
+            clientThread.close();
+            return;
         }
-        return;
+        int playerNumber = clients.size() + 1; // プレイヤー番号は1から始まる
+        clientThread.setPlayerNumber(playerNumber); // サーバースレッドにプレイヤー番号をセット
+        clients.add(clientThread); // クライアントをリストに追加
+
+        clientThread.sendMessage("PLAYER_NUMBER:" + playerNumber); // クライアントに通知
+        System.out.println("プレイヤー " + playerNumber + " が接続しました。");
+        if (clients.size() == maxClients) {
+            System.out.println("プレイヤーが揃いました。ゲームを開始します。");
+            startGame(); // プレイヤーが揃ったらゲームをスタート
         }
-        clients.add(clientThread); // ServerThread をリストに追加
     }
     public synchronized int getClientCount() {
        return clients.size();
@@ -75,7 +80,7 @@ public class ServerManager {
                 }
                 String response = gameManager.processPlayerAction(clientIndex, message);
                 broadcast(response);
-                sendPlayerDetails(clientThread, clientIndex);// プレイヤーへの詳細情報送信
+                broadcastGameState();
 
                 // ゲーム終了判定
                 if (gameManager.isGameFinished()) {
@@ -113,56 +118,12 @@ public class ServerManager {
             removeClient(client);
         }
     }
-    public void sendCardUpdateToClient(ServerThread client, int cardId, String area) {
-        String message = "UPDATE_CARD:" + cardId + ":" + area; // カードIDと配置場所を送信
-        client.sendMessage(message);
-    }
-    // 特定のクライアントにカード情報を送信
-    public void sendCardUpdate(ServerThread client, int cardId, String area) {
-        String message = "UPDATE_CARD:" + cardId + ":" + area;
-        client.sendMessage(message);
-    }
-
-    // 全クライアントにカード情報を送信
-    public void broadcastCardUpdate(int cardId, String area) {
-        String message = "UPDATE_CARD:" + cardId + ":" + area;
-        for (ServerThread client : clients) {
-            client.sendMessage(message);
-        }
-    }
-
-    // ターン情報を送信
-    public void sendTurnInfo(int playerId) {
-        String message = "TURN:" + playerId;
-        for (ServerThread client : clients) {
-            client.sendMessage(message);
-        }
-    }
-
-    // ゲーム終了通知を送信
-    public void sendGameOver(int winnerId) {
-        String message = "GAME_OVER:" + winnerId;
-        for (ServerThread client : clients) {
-            client.sendMessage(message);
-        }
-    }
-
 
     public synchronized void startGame() {
         try {
             gameManager.startGame();
-            broadcast("ゲームが開始されました！ プレイヤー 1 のターンです。");
-
-            // 各プレイヤーに個別のゲーム情報を送信
-            for (int i = 0; i < clients.size(); i++) {
-                try {
-                    ServerThread clientThread = clients.get(i);
-                    sendPlayerDetails(clientThread, i); // プレイヤーの詳細情報を送信
-                } catch (Exception e) {
-                    System.err.println("プレイヤー " + (i + 1) + " へのゲーム情報送信中にエラーが発生しました: " + e.getMessage());
-                    e.printStackTrace();
-                }
-            }   
+            broadcast("START");
+            broadcastGameState(); // 初期状態を全プレイヤーに送信
         } catch (Exception e) {
             System.err.println("ゲーム開始処理中にエラーが発生しました: " + e.getMessage());
         }
@@ -176,58 +137,50 @@ public class ServerManager {
             System.err.println("ゲームリセット中にエラーが発生しました: " + e.getMessage());
         }
     }
-    private void sendPlayerDetails(ServerThread clientThread, int clientIndex) {
-        try {
-            String handMessage = "あなたの手札: " + gameManager.getGame().getPlayers().get(clientIndex).getHand().toString();
-            clientThread.sendMessage(handMessage);
-
-            String captureMessage = "あなたの取り札: " + gameManager.getGame().getPlayers().get(clientIndex).getCaptures().toString();
-            clientThread.sendMessage(captureMessage);
-
-            int numRules = gameManager.getGame().getPlayers().get(clientIndex).chacknumberRules();
-            if (numRules > 0) {
-                broadcast("プレイヤー " + (clientIndex + 1) + " は " + numRules + " つの役を成立させました！");
-            } else {
-                broadcast("プレイヤー " + (clientIndex + 1) + " は役を成立させませんでした。");
-            }
-        } catch (Exception e) {
-            System.err.println("プレイヤー " + (clientIndex + 1) + " への詳細情報送信中にエラーが発生しました: " + e.getMessage());
-        }
-    }
-    public void sendGameState(ServerThread client,int clientIndex) {
-    Game game = gameManager.getGame();
-    int currentPlayer = gameManager.getCurrentPlayerIndex();
-
-    // 場の札を送信
-    for (Card card : game.getField().getCards()) {
-        sendCardUpdate(client, card.getId(), "field");
-    }
-
-    // プレイヤーの手札を送信
-    List<Card> playerHand = game.getPlayers().get(clientIndex).getHand();
-    for (Card card : playerHand) {
-        sendCardUpdate(client, card.getId(), "hand");
-    }
-
-    // プレイヤーの取り札を送信
-    List<Card> playerCaptures = game.getPlayers().get(clientIndex).getCaptures();
-    for (Card card : playerCaptures) {
-        sendCardUpdate(client, card.getId(), "capture");
-    }
-
-    // 現在のターン情報を送信
-    sendTurnInfo(currentPlayer);
-
-    // ゲーム終了情報を送信
-    if (gameManager.isGameFinished()) {
-        sendGameOver(currentPlayer);
-    }
-}
-public void broadcastGameState() {
+public synchronized void broadcastGameState() {
     for (int i = 0; i < clients.size(); i++) {
         ServerThread client = clients.get(i);
-        sendGameState(client, i);
+        sendGameState(client, i); // プレイヤーごとに送信
     }
 }
+private void sendCards(ServerThread client, List<Card> cards, String area) {
+    for (Card card : cards) {
+        client.sendMessage("UPDATE_CARD:" + card.getId() + ":" + area);
+    }
+}
+
+private void sendGameState(ServerThread client, int clientIndex) {
+    try {
+        Game game = gameManager.getGame();
+        int currentPlayer = gameManager.getCurrentPlayerIndex();
+
+        sendCards(client, game.getField().getCards(), "field");
+        sendCards(client, game.getPlayers().get(clientIndex).getHand(), "hand");
+        // 相手の手札（裏向きカード）を送信
+        int opponentIndex = (clientIndex + 1) % game.getPlayers().size();
+        List<Card> opponentHand = game.getPlayers().get(opponentIndex).getHand();
+        client.sendMessage("OPPONENT_HAND_COUNT:" + opponentHand.size());
+
+        client.sendMessage("TURN:" + currentPlayer);
+
+        if (gameManager.isGameFinished()) {
+            client.sendMessage("GAME_OVER:" + gameManager.getWinnerInfo());
+        }
+    } catch (Exception e) {
+        System.err.println("ゲーム状態送信エラー: " + e.getMessage());
+    }
+}
+
+
+// カードリストをIDのCSV形式に変換
+private String cardIDsToString(List<Card> cards) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < cards.size(); i++) {
+        sb.append(cards.get(i).getId());
+        if (i < cards.size() - 1) sb.append(",");
+    }
+    return sb.toString();
+}
+
 
 }

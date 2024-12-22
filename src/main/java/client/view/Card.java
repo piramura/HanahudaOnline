@@ -1,47 +1,53 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
-import java.util.List;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 
-public class Card extends JLabel {
-    private int id; // カードの識別ID
-    private String name; // カードの名前または情報
-    private boolean isFaceDown; // 表裏状態
-    private List<CardClickListener> listeners = new ArrayList<>(); // クリックリスナーリスト
+public class Card extends JButton {
+    private int id;
+    private String name;
+    private boolean isFaceDown;
+    private BufferedImage image;
 
-    // IDと名前を受け取るコンストラクタ
-    public Card(int id, String name) {
-        this(id, name, false); // デフォルトで表向き
-    }
-
-    // ID、名前、表裏状態を受け取るコンストラクタ
-    public Card(int id, String name, boolean isFaceDown) {
-        super(name); // 表示用テキストを設定
+    public Card(int id, String name, boolean isFaceDown, BufferedImage image) {
         this.id = id;
         this.name = name;
         this.isFaceDown = isFaceDown;
+        this.image = image;
 
-        // 初期表示を表裏に応じて設定
-        setText(isFaceDown ? "裏" : name);
+        setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
+        setFocusPainted(false); // フォーカス時の枠線を非表示
 
-        // 見た目の設定
-        setBorder(BorderFactory.createLineBorder(Color.BLACK));
-        setHorizontalAlignment(SwingConstants.CENTER);
-        setVerticalAlignment(SwingConstants.CENTER);
-        setPreferredSize(new Dimension(80, 100)); // サイズ調整
+        // ボタンのテキストは非表示（画像で覆われるため）
+        setText(null);
 
-        // クリックイベントを追加
-        addMouseListener(new MouseAdapter() {
+        // ボタンのクリックイベント
+        addActionListener(new ActionListener() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                notifyListeners(); // クリックリスナーに通知
+            public void actionPerformed(ActionEvent e) {
+                handleClick();
             }
         });
     }
 
-    // Getterメソッド
+    @Override
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+
+        if (isFaceDown) {
+            g.setColor(Color.GRAY);
+            g.fillRect(0, 0, getWidth(), getHeight()); // 裏面は灰色で塗りつぶす
+        } else if (image != null) {
+            g.drawImage(image, 0, 0, this); // 表面の画像を描画
+        }
+    }
+
+    private void handleClick() {
+        System.out.println("カードがクリックされました: ID=" + id + ", 表向き=" + !isFaceDown);
+    }
+
+    // Getter メソッド
     public int getId() {
         return id;
     }
@@ -50,25 +56,8 @@ public class Card extends JLabel {
         return isFaceDown;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    // カードを裏返す処理
-    public void flip() {
-        isFaceDown = !isFaceDown;
-        setText(isFaceDown ? "裏" : name);
-    }
-
-    // リスナーを追加
-    public void addCardClickListener(CardClickListener listener) {
-        listeners.add(listener);
-    }
-
-    // クリックリスナーに通知
-    private void notifyListeners() {
-        for (CardClickListener listener : listeners) {
-            listener.onCardClick(name); // 名前を通知
-        }
+    public void setFaceDown(boolean faceDown) {
+        isFaceDown = faceDown;
+        repaint(); // 再描画
     }
 }

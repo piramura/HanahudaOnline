@@ -33,12 +33,12 @@ public class CardArea extends JPanel {
     repaint();
 }
 
-
-    // カードを一括で更新
-    public void updateCards(List<Card> newCards) {
-        clearCards();
-        for (Card card : newCards) {
-            addCard(card);
+public void updateCards(List<Card> cards) {
+        removeAll(); // 既存のカードをクリア
+        for (Card card : cards) {
+            add(card); // 新しいカードを追加
         }
+        revalidate();
+        repaint();
     }
 }

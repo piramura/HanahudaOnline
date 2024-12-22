@@ -1,7 +1,10 @@
 import java.io.*;
 import javax.swing.*;
+import java.util.*;
 class MultiClient {
     private static JFrame clientWindow;
+    private static CommClient client; // スコープ内で保持
+    
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
         JFrame frame = new JFrame("Connecting to Server...");
@@ -9,10 +12,10 @@ class MultiClient {
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
 
-        // try {
+        try {
             String serverHost = "localhost"; // サーバーホスト名
             int serverPort = 10030;         // サーバーポート番号
-            CommClient client = new CommClient(serverHost, serverPort);
+            CommClient client = CommClient.getInstance(serverHost, serverPort);
 
             // サーバーとの接続を確認
             if (!verifyConnection(client)) {
@@ -25,23 +28,25 @@ class MultiClient {
             SwingUtilities.invokeLater(() -> {
                 frame.dispose(); // 接続確認用のウィンドウを閉じる
                 MainFrame mainFrame = new MainFrame();
-                mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                mainFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
                 mainFrame.setVisible(true);
 
                 GameController gameController = new GameController(mainFrame, client);
                 gameController.startGame();
+                // サーバーからのメッセージを受信するスレッドを開始
+                startReceiverThread(client,gameController);
             });
 
-            // サーバーからのメッセージを受信するスレッドを開始
-            startReceiverThread(client);
+            
 
-        // } catch (IOException e) {
-        //     System.err.println("エラー: " + e.getMessage());
-        //     frame.dispose(); // エラー時にウィンドウを閉じる
-        //     e.printStackTrace();
-        // }
+        } catch (IOException e) {
+            System.err.println("エラー: " + e.getMessage());
+            frame.dispose(); // エラー時にウィンドウを閉じる
+            e.printStackTrace();
+        }
     });
     }
+    
     private static void closeClient(CommClient client) {
         try {
             if (clientWindow != null) {
@@ -79,34 +84,75 @@ class MultiClient {
         return false;
     }
 
-    // サーバーからのメッセージを受信するスレッド
-    private static void startReceiverThread(CommClient client) {
-        new Thread(() -> {
-            try {
-                String message;
-                while ((message = client.recv()) != null) {
-                    System.out.println("サーバーから: " + message);
-                    handleServerMessage(message,client);
-                }
-            } catch (Exception e) {
-                System.out.println("サーバーとの接続が切れました。");
-            } finally {
-            closeClient(client); // 接続が切れたらウィンドウも閉じる
+    private static void startReceiverThread(CommClient client, GameController gameController) {
+    new Thread(() -> {
+        try {
+            String message;
+            while ((message = client.recv()) != null) {
+                handleMessage(message, gameController);
+            }
+        } catch (Exception e) {
+            System.out.println("サーバーとの接続が切れました。");
+        } finally {
+            closeClient(client);
         }
-        }).start();
+    }).start();
+}
+private static void handleMessage(String message, GameController gameController) {
+    // メッセージを改行で分割
+    String[] lines = message.split("\n");
+    for (String line : lines) {
+        if (line.startsWith("TURN:")) {
+            int currentPlayer = Integer.parseInt(message.split(":")[1]);
+            gameController.setCurrentTurn(currentPlayer);
+        } else if (line.startsWith("OPPONENT_HAND_COUNT:")) {
+            int opponentHandCount = Integer.parseInt(message.split(":")[1]);
+            gameController.updateOpponentHand(opponentHandCount);
+        } else if (line.startsWith("START")) {
+            gameController.startGame();
+        } else if (line.startsWith("UPDATE_CARD:")) {
+            handleUpdateCard(line, gameController);
+        } else if (line.startsWith("PLAYER_NUMBER:")) {
+            int playerNumber = Integer.parseInt(line.split(":")[1]);
+            System.out.println("あなたはプレイヤー " + playerNumber + " です。");
+            gameController.setPlayerID(playerNumber);
+        } else if (line.equals("GAME_OVER")) {
+            System.out.println("ゲームが終了しました。");
+            gameController.handleGameOver();
+        } else if (line.equals("FULL")) {
+            System.out.println("サーバーが満員です。ゲームを開始できません。");
+            closeClient(client);
+            System.exit(0);
+        } else {
+            System.out.println("サーバーから: " + line);
+        }
     }
+}
 
-    // サーバーからのメッセージを処理
-    private static void handleServerMessage(String message,CommClient client) {
-        if (message.equals("DISCONNECT")) {
-        System.out.println("サーバーから切断されました。");
-        closeClient(client); // ウィンドウを閉じる処理を呼び出す
-    } else if (message.startsWith("あなたの手札: ")) {
-            System.out.println("手札更新: " + message.substring(8));
-        } else if (message.startsWith("あなたの取り札: ")) {
-            System.out.println("取り札更新: " + message.substring(8));
+private static void handleUpdateCard(String message, GameController gameController) {
+    String[] parts = message.split(":");
+    int cardID = Integer.parseInt(parts[1]);
+    String area = parts[2];
+
+    gameController.addCardToArea(cardID, area);
+
+    // UI 更新
+    gameController.updateUI();
+}
+
+private static List<Integer> parseCardIDs(String csv) {
+    List<Integer> result = new ArrayList<>();
+    try {
+        String[] ids = csv.split(",");
+        for (String id : ids) {
+            result.add(Integer.parseInt(id.trim())); // 余計な空白をトリムしてからパース
         }
+    } catch (NumberFormatException e) {
+        System.err.println("カードIDのパース中にエラー: " + e.getMessage() + " | 元の入力: " + csv);
     }
+    return result;
+}
+
 
     // ユーザー入力をサーバーに送信
     private static void sendUserInputToServer(CommClient client) throws IOException {
