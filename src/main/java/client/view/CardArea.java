@@ -4,56 +4,74 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CardArea extends JPanel {
-    private List<Card> cards; // カードを保持するリスト
-
+    private final CardFactory cardFactory;
+    private List<Integer> cards; // カードを保持するリスト
     public CardArea(int rows, int cols) {
         this.cards = new ArrayList<>();
+        this.cardFactory = new CardFactory(); // ここで生成
         setLayout(new GridLayout(rows, cols, 10, 10)); // グリッド設定
         setPreferredSize(new Dimension(400, 200)); // サイズ調整
         setFocusable(true); // フォーカス可能にする
     }
-    public int getCardCount(){
+
+    public int getCardCount() {
         return cards.size();
     }
-    public List<Card> getListCard(){
+
+    public List<Integer> getCardIds() {
         return cards;
     }
-    // カードを追加
-    public void addCard(Card card) {
-        cards.add(card);
-        add(card); // パネルに追加
+
+    // カードIDを追加
+    public void addCard(int cardId) {
+        cards.add(cardId);
+        // クリック時のアクションを設定
+        JButton cardButton = cardFactory.createCard(cardId, e -> {
+            System.out.println("カード " + cardId + " がクリックされました！");
+            // カードクリック時の処理をここに記述
+        });
+        add(cardButton);
         revalidate();
         repaint();
     }
 
-    // カードをすべてクリア
+    // 全カードをクリア
     public void clearCards() {
         SwingUtilities.invokeLater(() -> { // UIスレッドで実行
-        try {
-            cards.clear();
-            removeAll();
-            revalidate();
-            repaint();
-        } catch (Exception e) {
-            System.err.println("CardArea のカードクリア中にエラー: " + e.getMessage());
-        }
-    });
+            try {
+                cards.clear();
+                removeAll();
+                revalidate();
+                repaint();
+            } catch (Exception e) {
+                System.err.println("CardArea のカードクリア中にエラー: " + e.getMessage());
+            }
+        });
     }
-    public void updateCards(List<Card> newCards) {
-        System.out.println("更新前のカード数: " + cards.size());
-    SwingUtilities.invokeLater(() -> { // UI更新はEDTで実行
-        try {
-            // 全てのカードを削除
-            cards.clear();
-            removeAll();
 
-            // 新しいカードを追加
-            for (Card card : newCards) {
-                cards.add(card);
-                add(card);
+    public void updateCards(List<Integer> newCardIds) {
+    System.out.println("更新前のカード数: " + cards.size());
+    SwingUtilities.invokeLater(() -> {
+        try {
+            // 差分計算: 追加が必要なカードID
+            List<Integer> cardsToAdd = new ArrayList<>(newCardIds);
+            cardsToAdd.removeAll(cards);
+
+            // 差分計算: 削除が必要なカードID
+            List<Integer> cardsToRemove = new ArrayList<>(cards);
+            cardsToRemove.removeAll(newCardIds);
+
+            // 削除
+            for (Integer cardId : cardsToRemove) {
+                cards.remove(cardId);
+                // 必要に応じて具体的なUI要素削除を追加
             }
 
-            // レイアウトと描画を更新
+            // 追加
+            for (Integer cardId : cardsToAdd) {
+                addCard(cardId);
+            }
+
             revalidate();
             repaint();
         } catch (Exception e) {
@@ -61,7 +79,7 @@ public class CardArea extends JPanel {
             e.printStackTrace();
         }
     });
-    System.out.println("新しいカード数: " + newCards.size());
+    System.out.println("新しいカード数: " + newCardIds.size());
 }
 
 }

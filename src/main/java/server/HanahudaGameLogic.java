@@ -4,10 +4,6 @@ public class HanahudaGameLogic {
     private Game game;
     private int currentPlayerIndex;
 
-    public HanahudaGameLogic() {
-        resetGame(); // 初期化時にリセット
-    }
-
     public void  resetGame() {
         Deck deck = new Deck();
         deck.shuffle();
@@ -60,7 +56,6 @@ public class HanahudaGameLogic {
         if (isGameFinished()) {
             return result;
         }
-
         return result + "\n次のターンはプレイヤー " + (currentPlayerIndex + 1) + " です。";
     }
     
@@ -78,7 +73,7 @@ public class HanahudaGameLogic {
         }
 
         nextTurn();
-        return "プレイヤー " + (playerIndex + 1) + " がカードをプレイしました。\n" + getGameState();
+        return "プレイヤー " + (playerIndex + 1) + " がカードをプレイしました。\n";
     }
 
     private String[] validateAction(String action) {//プレイヤーからの入力を検証し、適切な形式かをチェックする。
@@ -95,11 +90,12 @@ public class HanahudaGameLogic {
     }
 
     private boolean isCurrentPlayer(int playerIndex) {
-        return playerIndex == currentPlayerIndex;
+        return playerIndex == (currentPlayerIndex % 2);
     }
 
     private void nextTurn() {
-        currentPlayerIndex = (currentPlayerIndex + 1) % game.getPlayers().size();
+        currentPlayerIndex = currentPlayerIndex + 1;
+        game.setNowTurn(currentPlayerIndex);
     }
 
     public boolean isGameFinished() {
@@ -107,7 +103,5 @@ public class HanahudaGameLogic {
     }
 
 
-    public String getGameState() {
-        return game.toString(); // Game クラスの状態表示を利用
-    }
+
 }

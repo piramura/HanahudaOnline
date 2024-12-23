@@ -15,13 +15,15 @@ public class HanahudaServer {
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         // ClientSessionManagerを作成し、GameSessionManagerに渡す
         ClientSessionManager clientSessionManager = new ClientSessionManager();
-        GameSessionManager gameSessionManager = new GameSessionManager(clientSessionManager);
+        GameSessionManager gameSessionManager = GameSessionManager.getInstance(clientSessionManager);
 
         // エンドポイント設定
-        server.createContext("/game/start", new StartGameHandler(gameSessionManager));
         server.createContext("/game/play", new PlayCardHandler(gameSessionManager));
         server.createContext("/game/state", new GameStateHandler(gameSessionManager));
+        server.createContext("/game/ready", new ReadyHandler(gameSessionManager));
         server.createContext("/session", new SessionHandler(clientSessionManager));
+        server.createContext("/game/playerId", new PlayerIdHandler(gameSessionManager));
+        server.createContext("/session/terminate", new TerminateSessionHandler(gameSessionManager));
 
 
         server.setExecutor(null);
@@ -30,28 +32,6 @@ public class HanahudaServer {
     }
 }
 
-class StartGameHandler implements HttpHandler {
-    private GameSessionManager gameSessionManager;
-
-    public StartGameHandler(GameSessionManager gameSessionManager) {
-        this.gameSessionManager = gameSessionManager;
-    }
-
-    @Override
-    public void handle(HttpExchange exchange) throws IOException {
-        if (!"POST".equals(exchange.getRequestMethod())) {
-            exchange.sendResponseHeaders(405, -1); // Method Not Allowed
-            return;
-        }
-
-        gameSessionManager.startGame();
-        String response = "ゲームが開始されました！";
-        exchange.sendResponseHeaders(200, response.getBytes().length);
-        OutputStream os = exchange.getResponseBody();
-        os.write(response.getBytes());
-        os.close();
-    }
-}
 class PlayCardHandler implements HttpHandler {
     private GameSessionManager gameSessionManager;
 
@@ -99,6 +79,30 @@ class GameStateHandler implements HttpHandler {
         os.close();
     }
 }
+class ReadyHandler implements HttpHandler {
+    private GameSessionManager gameSessionManager;
+
+    public ReadyHandler(GameSessionManager gameSessionManager) {
+        this.gameSessionManager = gameSessionManager;
+    }
+
+    @Override
+    public void handle(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+            return;
+        }
+
+        String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
+        String response = gameSessionManager.setClientReady(sessionId);
+
+        exchange.sendResponseHeaders(200, response.getBytes().length);
+        OutputStream os = exchange.getResponseBody();
+        os.write(response.getBytes());
+        os.close();
+    }
+}
+
 class SessionHandler implements HttpHandler {
     private ClientSessionManager sessionManager;
     
@@ -130,6 +134,79 @@ class SessionHandler implements HttpHandler {
         exchange.sendResponseHeaders(200, sessionId.getBytes().length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(sessionId.getBytes());
+        }
+    }
+    
+}
+class PlayerIdHandler implements HttpHandler {
+    private GameSessionManager gameSessionManager;
+
+    public PlayerIdHandler(GameSessionManager gameSessionManager) {
+        this.gameSessionManager = gameSessionManager;
+    }
+
+    @Override
+    public void handle(HttpExchange exchange) throws IOException {
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+            return;
+        }
+
+        String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
+        if (sessionId == null || sessionId.isEmpty()) {
+            String response = "ERROR: セッションIDが提供されていません";
+            exchange.sendResponseHeaders(400, response.getBytes().length); // Bad Request
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+            return;
+        }
+
+        try {
+            int playerId = gameSessionManager.getPlayerId(sessionId);
+            String response = String.valueOf(playerId);
+            exchange.sendResponseHeaders(200, response.getBytes().length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+        } catch (IllegalArgumentException e) {
+            String response = "ERROR: " + e.getMessage();
+            exchange.sendResponseHeaders(404, response.getBytes().length); // Not Found
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+        }
+    }
+}
+class TerminateSessionHandler implements HttpHandler {
+    private GameSessionManager sessionManager;
+
+    public TerminateSessionHandler(GameSessionManager sessionManager) {
+        this.sessionManager = sessionManager;
+    }
+
+    @Override
+    public void handle(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+            return;
+        }
+
+        String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
+        if (sessionId == null || sessionId.isEmpty()) {
+            String response = "ERROR: セッションIDが提供されていません。";
+            exchange.sendResponseHeaders(400, response.getBytes().length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+            return;
+        }
+
+        boolean removed = sessionManager.removeSession(sessionId);
+        String response = removed ? "セッション削除成功" : "ERROR: セッションが見つかりません。";
+        exchange.sendResponseHeaders(200, response.getBytes().length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
         }
     }
 }

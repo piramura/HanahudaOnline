@@ -1,67 +1,139 @@
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Scanner;
-
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
 
 public class GameClient {
-    private String sessionId;
-
-    public GameClient(String sessionId) {
-        this.sessionId = sessionId;
-    }
     private static final HttpClient CLIENT = HttpClient.newHttpClient();
+    private String sessionId;
+    private final String serverUrl; // サーバーURLをフィールドに追加
+    private GameController controller;
+    // コンストラクタでURLを受け取る
+    public GameClient(String serverUrl) {
+        this.serverUrl = serverUrl != null ? serverUrl : "http://localhost:10030"; // デフォルト値を設定
+    }
+    public void setGameController(GameController controller){
+        this.controller = controller;
+    }
+    // セッションIDを取得
+    public void initializeSession(String passphrase) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI(serverUrl + "/session"))
+            .POST(HttpRequest.BodyPublishers.ofString(passphrase))
+            .header("Content-Type", "text/plain")
+            .build();
 
-public void playCard(String cardInfo) throws Exception {
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            sessionId = response.body();
+            System.out.println("取得したセッションID: " + sessionId);
+            ready();
+        } else {
+            throw new RuntimeException("セッションID取得エラー: " + response.statusCode());
+        }
+    }
+    public int fetchPlayerId() throws Exception {
     HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI("http://localhost:10030/game/play"))
+        .uri(new URI(serverUrl + "/game/playerId")) // PlayerID取得のエンドポイント
+        .GET()
+        .header("Session-ID", sessionId)
+        .build();
+
+    HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    if (response.statusCode() == 200) {
+        return Integer.parseInt(response.body());
+    } else {
+        throw new RuntimeException("プレイヤーID取得エラー: " + response.statusCode());
+    }
+}
+
+    // 準備完了通知
+    public void ready() throws Exception {
+        System.out.println("準備完了通知送信URL: " + serverUrl + "/game/ready");
+
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI(serverUrl + "/game/ready"))
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .header("Session-ID", sessionId)
+            .build();
+
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            System.out.println("準備完了通知送信結果: " + response.body());
+        } else {
+            throw new RuntimeException("準備完了通知エラー: " + response.statusCode());
+        }
+    }
+    public boolean isGameStarted() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI(serverUrl + "/game/ready")) // 準備完了状態を確認するエンドポイント
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .header("Session-ID", sessionId)
+            .build();
+
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    
+        if (response.statusCode() == 200) {
+            String responseBody = response.body();
+            System.out.println("サーバーからのレスポンス: " + responseBody);
+            return "GAME_STARTED".equals(responseBody); // レスポンスが "GAME_STARTED" なら true を返す
+        } else {
+            throw new RuntimeException("準備完了確認エラー: " + response.statusCode());
+        }
+    }
+    // ゲーム状態取得
+    public void fetchGameState() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI(serverUrl + "/game/state"))
+            .GET()
+            .header("Session-ID", sessionId)
+            .build();
+
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            System.out.println("ゲーム状態: " + response.body());
+            controller.parseGameState(response.body());
+        } else {
+            throw new RuntimeException("ゲーム状態取得エラー: " + response.statusCode());
+        }
+    }
+    
+    
+
+    // カードプレイ
+    public void playCard(String cardInfo) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI(serverUrl + "/game/play"))
             .POST(HttpRequest.BodyPublishers.ofString("PLAY_CARD:" + cardInfo))
             .header("Session-ID", sessionId)
             .header("Content-Type", "text/plain")
             .build();
 
-    HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    if (response.statusCode() == 200) {
-        System.out.println("カードプレイ成功: " + response.body());
-    } else {
-        throw new RuntimeException("カードプレイエラー: " + response.statusCode());
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            System.out.println("カードプレイ成功: " + response.body());
+        } else {
+            throw new RuntimeException("カードプレイエラー: " + response.statusCode());
+        }
     }
-}
+    public void disconnect() throws Exception {
+    if (sessionId == null || sessionId.isEmpty()) {
+        System.out.println("セッションIDが未設定のため、切断通知をスキップします。");
+        return;
+    }
 
-public String fetchGameState() throws Exception {
     HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI("http://localhost:10030/game/state"))
-            .GET()
-            .header("Session-ID", sessionId)
-            .build();
+        .uri(new URI(serverUrl + "/session/terminate"))
+        .POST(HttpRequest.BodyPublishers.noBody())
+        .header("Session-ID", sessionId)
+        .build();
 
     HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     if (response.statusCode() == 200) {
-        return response.body();
+        System.out.println("切断通知成功: " + response.body());
     } else {
-        throw new RuntimeException("サーバーからの応答エラー: " + response.statusCode());
+        System.err.println("切断通知エラー: " + response.statusCode());
     }
-
-}
-public String initializeSession(String passphrase) throws Exception {
-    HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI("http://localhost:10030/session"))
-            .POST(HttpRequest.BodyPublishers.ofString(passphrase))
-            .header("Content-Type", "text/plain")
-            .build();
-
-    HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    if (response.statusCode() == 200) {
-        this.sessionId = response.body();
-        System.out.println("取得したセッションID: " + sessionId);
-        return response.body();
-    } else {
-        throw new RuntimeException("セッションID取得エラー: " + response.statusCode());
-    }
-}
+}   
 
 }

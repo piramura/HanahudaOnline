@@ -15,10 +15,10 @@ public class ClientSessionManager {
         return validSessions.containsKey(sessionId);
     }
 
-    // セッションIDを削除
-    public void removeSession(String sessionId) {
-        validSessions.remove(sessionId);
+    public boolean removeSession(String sessionId) {
+        return validSessions.remove(sessionId) != null;
     }
+
     public Integer getPlayerIndex(String sessionId) {
         return validSessions.get(sessionId);
     }

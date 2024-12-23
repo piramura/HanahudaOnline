@@ -11,6 +11,7 @@ public class MainFrame extends JFrame {
     private final CardArea boardArea;
     private final CardArea playerHandArea;
     private final CardArea opponentHandArea;
+    private JPanel turnPanel;
 
     public MainFrame(GameController controller) {
         setTitle("Hanafuda Game");
@@ -34,24 +35,29 @@ public class MainFrame extends JFrame {
 
     }
 
-    public void syncUIWithGameState(){
-        updateBoard(boardArea.getListCard());
-        updatePlayerHand(playerHandArea.getListCard());
-        updateOpponentHand(opponentHandArea.getCardCount());
-    }
-
-    public void updateBoard(List<Card> fieldCards) {
+    public void updateBoard(List<Integer> fieldCards) {
         boardArea.updateCards(fieldCards);
     }
 
-    public void updatePlayerHand(List<Card> playerHand) {
+    public void updatePlayerHand(List<Integer> playerHand) {
         playerHandArea.updateCards(playerHand);
     }
 
     public void updateOpponentHand(int count) {
         opponentHandArea.clearCards();
         for (int i = 0; i < count; i++) {
-            opponentHandArea.addCard(new Card(-1, "Hidden", true, null, null));
+            opponentHandArea.addCard(-1);
         }
+    }
+    public void updadateTurn(int turn){
+        
+    }
+    public void showDisconnectionMessage(int disconnectedPlayer) {
+        JOptionPane.showMessageDialog(
+            this,
+            "プレイヤー " + disconnectedPlayer + " が切断されました。",
+            "切断通知",
+            JOptionPane.WARNING_MESSAGE
+        );
     }
 }

@@ -39,4 +39,5 @@ public class Game {
     public int getNowTurn(){
         return nowTurn;
     }
+
 }

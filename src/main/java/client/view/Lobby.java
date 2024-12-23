@@ -32,6 +32,10 @@ private void startOnlineMatch() {
     // ボタンを無効化
     onlineButton.setEnabled(false);
     GameController gameController = new GameController();
+    
+    GameClient client = new GameClient("http://localhost:10030");
+    client.setGameController(gameController);
+    gameController.setGameClient(client);
     gameController.startOnlineMatch();
 
 }
