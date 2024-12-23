@@ -1,7 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
 import javax.swing.*;
-public class GameController {
+public class GameController implements GameStateListener{
     private MainFrame mainFrame;
     private CommClient commClient;
     private GameStateManager gameStateManager;
@@ -19,7 +19,7 @@ public class GameController {
     public GameController(MainFrame frame, CommClient client) {
         this.mainFrame = frame;
         this.commClient = client;
-        this.gameStateManager = new GameStateManager(this); // GameStateManagerを内部で初期化
+        this.gameStateManager = new GameStateManager(); // GameStateManagerを内部で初期化
     }
     public GameStateManager getGameStateManager() {
         return this.gameStateManager; // GameController が保持する GameStateManager を返す
@@ -92,13 +92,12 @@ public void handleCardClick(Card card) {
 
 
     public void updateUI() {
-       SwingUtilities.invokeLater(() -> {
-        mainFrame.updateBoard(gameStateManager.getFieldCards());
-        mainFrame.updatePlayerHand(gameStateManager.getPlayerHand());
-        mainFrame.updateOpponentHand(gameStateManager.getOpponentHand().size());
-    });
-    System.out.println("UI更新: フィールドカード数=" + gameStateManager.getFieldCards().size());
-
+        mainFrame.refreshUI(gameStateManager);
+    // System.out.println("UI更新: フィールドカード数=" + gameStateManager.getFieldCards().size());
+    }
+    @Override
+    public void onStateUpdated(GameStateManager manager) {
+        updateUI();
     }
 
     // サーバーにクリック情報を送信

@@ -35,7 +35,6 @@ class MultiClient {
                 mainFrame.setVisible(true);
 
                 GameController gameController = new GameController(mainFrame, client);
-                mainFrame.setGameController(gameController);
                 gameController.startGame();
                 // サーバーからのメッセージを受信するスレッドを開始
                 startReceiverThread(client,gameController);

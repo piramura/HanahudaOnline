@@ -8,12 +8,22 @@ public class GameStateManager {
     public CardFactory cardFactory;
     private int currentPlayer;
     private boolean isGameOver;
+    private List<GameStateListener> listeners = new ArrayList<>();
+    public void addListener(GameStateListener listener) {
+    listeners.add(listener);
+}
+private void notifyListeners() {
+    for (GameStateListener listener : listeners) {
+        listener.onStateUpdated(this);
+    }
+}
 
-    public GameStateManager(GameController gameController) {
+
+    public GameStateManager() {
         this.fieldCards = new ArrayList<>();
         this.playerHand = new ArrayList<>();
         this.opponentHand = new ArrayList<>();
-        this.cardFactory = new CardFactory(gameController);
+        this.cardFactory = new CardFactory();
         this.currentPlayer = 0;
         this.isGameOver = false;
     }
@@ -39,6 +49,7 @@ public class GameStateManager {
         System.out.println("フィールドカード: " + fieldCards);
         System.out.println("プレイヤー手札: " + playerHand);
         System.out.println("相手手札: " + opponentHand);
+        notifyListeners(); // 状態変更を通知
     }
     // フィールドカードの管理
     public List<Card> getFieldCards() {

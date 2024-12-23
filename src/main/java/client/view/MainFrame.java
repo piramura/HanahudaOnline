@@ -10,9 +10,9 @@
         private JFrame turnFrame;
         private JLabel turnLabel;
         private CardFactory cardFactory;
-        private GameController gameController; // 後からセット可能にする
 
         public MainFrame() {
+            this.cardFactory = new CardFactory();
             
             // 初期化コード
             turnFrame = new JFrame("ターン情報");
@@ -42,12 +42,12 @@
             add(boardArea, BorderLayout.CENTER);
             add(playerHandArea, BorderLayout.SOUTH);
         }
-        // GameController をセットするメソッド
-    public void setGameController(GameController gameController) {
-        this.gameController = gameController;
-        this.cardFactory = new CardFactory(gameController);
+    public void refreshUI(GameStateManager stateManager) {
+        updateBoard(stateManager.getFieldCards());
+        updatePlayerHand(stateManager.getPlayerHand());
+        updateOpponentHand(stateManager.getOpponentHand().size());
     }
-        // ターン情報を更新
+    // ターン情報を更新
     public void updateTurnLabel(int currentPlayer) {
         SwingUtilities.invokeLater(() -> {
         turnLabel.setText("ターン: プレイヤー " + (currentPlayer + 1));
@@ -97,12 +97,12 @@
             });
         }
         public CardArea getFieldArea() {
-        return boardArea; // 場のカードエリア
-    }
+            return boardArea; // 場のカードエリア
+        }
 
-    public CardArea getPlayerHandArea() {
-        return playerHandArea; // プレイヤー手札エリア
-    }
+        public CardArea getPlayerHandArea() {
+            return playerHandArea; // プレイヤー手札エリア
+        }
 
     public CardArea getOpponentHandArea() {
         return opponentHandArea; // 相手手札エリア
