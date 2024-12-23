@@ -2,30 +2,36 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 public class CardFactory {
-    //カードを生成する
+    private GameController gameController;
+    // GameControllerを受け取るコンストラクタ
+    public CardFactory(GameController gameController) {
+        this.gameController = gameController;
+    }
+
+    // 完全なカード生成メソッド
+    public Card createCard(int id, String name, boolean isFaceDown, BufferedImage image) {
+        return new Card(id, name, isFaceDown, image, gameController);
+    }
+
+    // デフォルト画像を使う簡略化メソッド
     public Card createCard(int id, String name, boolean isFaceDown) {
-        String imagePath = "images/" + id + ".png";
-        BufferedImage image = convertToBufferedImage(new ImageIcon(imagePath));
-        return new Card(id, name, isFaceDown, image);
+        BufferedImage defaultImage = getDefaultCardImage(id);
+        return createCard(id, name, isFaceDown, defaultImage);
     }
 
+    // IDのみで生成（デフォルト名と状態を適用）
     public Card createCard(int id) {
-        String name = "Card " + id;
-        boolean isFaceDown = id < 0;
-        return createCard(id, name, isFaceDown);
+        return createCard(id, "Card " + id, id < 0); // デフォルトの名前と状態を設定
     }
 
-    private BufferedImage convertToBufferedImage(ImageIcon icon) {
-        Image img = icon.getImage();
-        BufferedImage bufferedImage = new BufferedImage(
-                img.getWidth(null),
-                img.getHeight(null),
-                BufferedImage.TYPE_INT_ARGB
-        );
-        Graphics2D g2 = bufferedImage.createGraphics();
-        g2.drawImage(img, 0, 0, null);
-        g2.dispose();
-        return bufferedImage;
+    // デフォルト画像を取得するメソッド
+    private BufferedImage getDefaultCardImage(int id) {
+        BufferedImage dummyImage = new BufferedImage(100, 150, BufferedImage.TYPE_INT_ARGB);
+        Graphics g = dummyImage.getGraphics();
+        g.setColor(Color.LIGHT_GRAY);
+        g.fillRect(0, 0, 100, 150);
+        g.dispose();
+        return dummyImage;
     }
 
 }

@@ -9,14 +9,19 @@
         private CardArea opponentHandArea; // 相手の手札
         private JFrame turnFrame;
         private JLabel turnLabel;
+        private CardFactory cardFactory;
+        private GameController gameController; // 後からセット可能にする
 
         public MainFrame() {
+            
             // 初期化コード
             turnFrame = new JFrame("ターン情報");
             turnLabel = new JLabel("ターン: プレイヤー 1");
             turnFrame.add(turnLabel, BorderLayout.CENTER);
             turnFrame.pack();
             turnFrame.setVisible(true);
+            turnFrame.setFocusableWindowState(false); // フォーカスを受け付けない
+
             setTitle("Hanafuda Game");
             setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // 自動でウィンドウを閉じない
             setSize(800, 600);
@@ -37,6 +42,11 @@
             add(boardArea, BorderLayout.CENTER);
             add(playerHandArea, BorderLayout.SOUTH);
         }
+        // GameController をセットするメソッド
+    public void setGameController(GameController gameController) {
+        this.gameController = gameController;
+        this.cardFactory = new CardFactory(gameController);
+    }
         // ターン情報を更新
     public void updateTurnLabel(int currentPlayer) {
         SwingUtilities.invokeLater(() -> {
@@ -73,11 +83,10 @@
             playerHandArea.updateCards(playerHand);
         }
 
-        public void updateOpponentHand(int cardCount) {
+        public void updateOpponentHand(int count) {
             opponentHandArea.clearCards();
-            CardFactory cardFactory = new CardFactory();
-            for (int i = 0; i < cardCount; i++) {
-                opponentHandArea.addCard(cardFactory.createCard(-1, "Hidden", true)); // 裏向きカード
+            for (int i=0;i<count;i++) {
+                opponentHandArea.addCard(cardFactory.createCard(-1, "Hidden", true));
             }
         }
 

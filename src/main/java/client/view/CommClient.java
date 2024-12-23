@@ -2,13 +2,11 @@ import java.net.*;
 import java.io.*;
 
 class CommClient {
-    private static CommClient instance; // シングルトンインスタンス
     private Socket clientS = null;
     private InputStream in = null; // BufferedReader -> InputStream に変更
     private OutputStream out = null; // PrintWriter -> OutputStream に変更
 
-    // プライベートコンストラクタ
-    private CommClient(String serverHost, int serverPort) throws IOException {
+    public CommClient(String serverHost, int serverPort) throws IOException {
         clientS = new Socket(InetAddress.getByName(serverHost), serverPort);
         if (clientS.isClosed()) {
             throw new IOException("Socket が閉じられています。");
@@ -18,13 +16,6 @@ class CommClient {
         System.out.println("接続成功: " + serverHost + ":" + serverPort);
     }
 
-    // シングルトンインスタンスの取得
-    public static synchronized CommClient getInstance(String serverHost, int serverPort) throws IOException {
-        if (instance == null || instance.clientS.isClosed()) {
-            instance = new CommClient(serverHost, serverPort);
-        }
-        return instance;
-    }
     // boolean open(String host, int port) {
     //     try {
     //         clientS = new Socket(InetAddress.getByName(host), port);
@@ -101,6 +92,8 @@ class CommClient {
 
     public void close() {
         try {
+            System.out.println("close() メソッドが呼び出されました。スタックトレース:");
+            Thread.dumpStack(); // スタックトレースを出
             if (out != null) {
                 out.write("/QUIT\n".getBytes()); // サーバーに終了を通知
                 out.flush();

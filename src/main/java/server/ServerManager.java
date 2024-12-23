@@ -9,7 +9,7 @@ public class ServerManager {
 
     // クライアントの追加
     public synchronized void addClient(ServerThread clientThread) {
-        if (clients.size() >= maxClients) {
+        if (clients.size() > maxClients) {
             clientThread.sendMessage("FULL"); // サーバーが満員の場合は通知
             clientThread.close();
             return;
@@ -156,11 +156,7 @@ private void sendGameState(ServerThread client, int clientIndex) {
 
         sendCards(client, game.getField().getCards(), "field");
         sendCards(client, game.getPlayers().get(clientIndex).getHand(), "hand");
-        // 相手の手札（裏向きカード）を送信
-        int opponentIndex = (clientIndex + 1) % game.getPlayers().size();
-        List<Card> opponentHand = game.getPlayers().get(opponentIndex).getHand();
-        client.sendMessage("OPPONENT_HAND_COUNT:" + opponentHand.size());
-
+        sendCards(client, game.getPlayers().get(Math.abs(clientIndex-1)).getHand(), "opponentHand");
         client.sendMessage("TURN:" + currentPlayer);
 
         if (gameManager.isGameFinished()) {

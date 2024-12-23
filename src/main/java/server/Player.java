@@ -4,6 +4,7 @@ public class Player {
     private ArrayList<Card> hand; // 手札
     private ArrayList<Card> captures; // 取り札
     private int numRules;
+    private int playerID;
 
     public Player() {
         hand = new ArrayList<>();
@@ -12,6 +13,12 @@ public class Player {
     
     public int chacknumberRules(){
         return numRules;
+    }
+    public void setPlayerID(int num){
+        this.playerID = num;
+    }
+    public int getPlayerID(){
+        return this.playerID;
     }
     public void setnumberRules(int num){
         numRules = num;

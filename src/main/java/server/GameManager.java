@@ -21,6 +21,8 @@ public class GameManager {
         for (int i = 0; i < 2; i++) {
             game.addPlayer(new Player());
         }
+        game.getPlayers().get(0).setPlayerID(1);
+        game.getPlayers().get(1).setPlayerID(2);
 
         // 配札処理
         for (Player player : game.getPlayers()) {

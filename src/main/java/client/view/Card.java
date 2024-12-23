@@ -9,19 +9,21 @@ public class Card extends JButton {
     private String name;
     private boolean isFaceDown;
     private BufferedImage image;
+    private GameController gameController; // ゲームコントローラーへの参照
 
-    public Card(int id, String name, boolean isFaceDown, BufferedImage image) {
+    public Card(int id, String name, boolean isFaceDown, BufferedImage image, GameController gameController) {
         this.id = id;
         this.name = name;
         this.isFaceDown = isFaceDown;
         this.image = image;
+        this.gameController = gameController; // ゲームコントローラーをセット
 
         setPreferredSize(new Dimension(image.getWidth(), image.getHeight()));
         setFocusPainted(false); // フォーカス時の枠線を非表示
 
         // ボタンのテキストは非表示（画像で覆われるため）
         setText(null);
-
+        setFocusable(false); // フォーカスを無効化
         // ボタンのクリックイベント
         addActionListener(new ActionListener() {
             @Override
@@ -45,6 +47,9 @@ public class Card extends JButton {
 
     private void handleClick() {
         System.out.println("カードがクリックされました: ID=" + id + ", 表向き=" + !isFaceDown);
+        if (gameController != null) {
+            gameController.handleCardClick(this); // ゲームコントローラーに通知
+        }
     }
 
     // Getter メソッド

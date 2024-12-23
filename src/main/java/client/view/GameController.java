@@ -1,15 +1,17 @@
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.*;
 public class GameController {
     private MainFrame mainFrame;
     private CommClient commClient;
     private GameStateManager gameStateManager;
-    private CardManager cardManager;
     private int playerID; // プレイヤーIDを保持するフィールド
     private int currentturn;
+    
     // プレイヤーIDを設定するメソッドを追加
     public void setPlayerID(int playerID) {
         this.playerID = playerID;
+        gameStateManager.setCurrentPlayer(playerID);
     }
     public void setCurrentTurn(int currentturn) {
         this.currentturn = currentturn;
@@ -17,8 +19,7 @@ public class GameController {
     public GameController(MainFrame frame, CommClient client) {
         this.mainFrame = frame;
         this.commClient = client;
-        this.gameStateManager = new GameStateManager(); // GameStateManagerを内部で初期化
-        this.cardManager = new CardManager(); // CardManagerの初期化
+        this.gameStateManager = new GameStateManager(this); // GameStateManagerを内部で初期化
     }
     public GameStateManager getGameStateManager() {
         return this.gameStateManager; // GameController が保持する GameStateManager を返す
@@ -63,7 +64,6 @@ public void handleGameOver() {
     public void updateTurnInfo(int currentPlayer) {
     // UIのターン表示を更新
     mainFrame.updateTurnLabel(currentPlayer );
-    gameStateManager.setCurrentPlayer(currentPlayer);
 }
 
     // GameController.java
@@ -73,6 +73,7 @@ public void handleCardClick(Card card) {
         System.out.println("クリックしたカードID: " + card.getId());
         sendCardToServer(card.getId());
     } else {
+        System.out.println("現在のプレイヤーのID: " + gameStateManager.getCurrentPlayer()+" +" +playerID);
         System.out.println("現在のターンではありません。");
     }
     } catch (IllegalArgumentException e) {
@@ -91,9 +92,13 @@ public void handleCardClick(Card card) {
 
 
     public void updateUI() {
+       SwingUtilities.invokeLater(() -> {
         mainFrame.updateBoard(gameStateManager.getFieldCards());
         mainFrame.updatePlayerHand(gameStateManager.getPlayerHand());
         mainFrame.updateOpponentHand(gameStateManager.getOpponentHand().size());
+    });
+    System.out.println("UI更新: フィールドカード数=" + gameStateManager.getFieldCards().size());
+
     }
 
     // サーバーにクリック情報を送信
@@ -116,6 +121,9 @@ public void addCardToArea(int cardID, String area) {
             break;
         case "hand":
             gameStateManager.addPlayerCard(newCard); // プレイヤーの手札に追加
+            break;
+        case "opponentHand":
+            gameStateManager.addOpponentCard(newCard);
             break;
         default:
             throw new IllegalArgumentException("無効なエリア指定: " + area);

@@ -1,9 +1,11 @@
 import java.io.*;
 import javax.swing.*;
 import java.util.*;
+import java.awt.DefaultFocusTraversalPolicy;
 class MultiClient {
     private static JFrame clientWindow;
     private static CommClient client; // スコープ内で保持
+    private GameController gameController; // 後からセット可能にする
     
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
@@ -11,11 +13,12 @@ class MultiClient {
         frame.setSize(300, 200);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
+        frame.setFocusTraversalPolicy(new DefaultFocusTraversalPolicy());
 
         try {
             String serverHost = "localhost"; // サーバーホスト名
             int serverPort = 10030;         // サーバーポート番号
-            CommClient client = CommClient.getInstance(serverHost, serverPort);
+            CommClient client = new CommClient(serverHost, serverPort);
 
             // サーバーとの接続を確認
             if (!verifyConnection(client)) {
@@ -32,6 +35,7 @@ class MultiClient {
                 mainFrame.setVisible(true);
 
                 GameController gameController = new GameController(mainFrame, client);
+                mainFrame.setGameController(gameController);
                 gameController.startGame();
                 // サーバーからのメッセージを受信するスレッドを開始
                 startReceiverThread(client,gameController);
@@ -93,8 +97,7 @@ class MultiClient {
             }
         } catch (Exception e) {
             System.out.println("サーバーとの接続が切れました。");
-        } finally {
-            closeClient(client);
+            e.printStackTrace();
         }
     }).start();
 }
@@ -103,10 +106,10 @@ private static void handleMessage(String message, GameController gameController)
     String[] lines = message.split("\n");
     for (String line : lines) {
         if (line.startsWith("TURN:")) {
-            int currentPlayer = Integer.parseInt(message.split(":")[1]);
+            int currentPlayer = Integer.parseInt(line.split(":")[1]);
             gameController.setCurrentTurn(currentPlayer);
         } else if (line.startsWith("OPPONENT_HAND_COUNT:")) {
-            int opponentHandCount = Integer.parseInt(message.split(":")[1]);
+            int opponentHandCount = Integer.parseInt(line.split(":")[1]);
             gameController.updateOpponentHand(opponentHandCount);
         } else if (line.startsWith("START")) {
             gameController.startGame();

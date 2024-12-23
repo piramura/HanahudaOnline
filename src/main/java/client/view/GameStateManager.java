@@ -9,11 +9,11 @@ public class GameStateManager {
     private int currentPlayer;
     private boolean isGameOver;
 
-    public GameStateManager() {
+    public GameStateManager(GameController gameController) {
         this.fieldCards = new ArrayList<>();
         this.playerHand = new ArrayList<>();
         this.opponentHand = new ArrayList<>();
-        this.cardFactory = new CardFactory();
+        this.cardFactory = new CardFactory(gameController);
         this.currentPlayer = 0;
         this.isGameOver = false;
     }
@@ -36,6 +36,9 @@ public class GameStateManager {
         for (int i = 0; i < opponentHandCount; i++) {
             opponentHand.add(cardFactory.createCard(-1, "Hidden", true));
         }
+        System.out.println("フィールドカード: " + fieldCards);
+        System.out.println("プレイヤー手札: " + playerHand);
+        System.out.println("相手手札: " + opponentHand);
     }
     // フィールドカードの管理
     public List<Card> getFieldCards() {
@@ -80,6 +83,9 @@ public class GameStateManager {
     public int getCurrentPlayer() {
         return currentPlayer;
     }
+    public void setCurrentPlayer(int playerID){
+        this.currentPlayer = playerID;
+    }
 
     public void nextTurn() {
         this.currentPlayer = (this.currentPlayer + 1) % 2; // 例: 2人プレイヤーの場合
@@ -93,15 +99,12 @@ public class GameStateManager {
     public void setGameOver(boolean gameOver) {
         this.isGameOver = gameOver;
     }
-    public void setCurrentPlayer(int currentPlayer){
-        this.currentPlayer = currentPlayer;
-    }
     public void updateOpponentHandCount(int count) {
-    opponentHand.clear();
-    for (int i = 0; i < count; i++) {
-        opponentHand.add(cardFactory.createCard(-1, "Hidden", true)); // 裏向きカード
+        opponentHand.clear();
+        for (int i=0;i<count;i++) {
+            opponentHand.add(cardFactory.createCard(-1, "Hidden", true)); // 裏向きカード
+        }
     }
-}
 
     // GameStateManager.java
 public void playCard(Card card) {
