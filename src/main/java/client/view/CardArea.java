@@ -12,7 +12,12 @@ public class CardArea extends JPanel {
         setPreferredSize(new Dimension(400, 200)); // サイズ調整
         setFocusable(true); // フォーカス可能にする
     }
-
+    public int getCardCount(){
+        return cards.size();
+    }
+    public List<Card> getListCard(){
+        return cards;
+    }
     // カードを追加
     public void addCard(Card card) {
         cards.add(card);

@@ -7,6 +7,7 @@ public class Card{
     private final List<Role> roles; // 複数の役を持つ
 	private boolean isInPlay;// カードが場にあるかどうか
     private int id; // 一意のID
+    private Location location; // 現在位置を記憶する
 
 	// コンストラクタ
     public Card(int id,Month month, Point point) {
@@ -14,6 +15,24 @@ public class Card{
         this.point = point;
         this.roles = new ArrayList<>();
         this.id = id;
+        this.location = Location.DECK; // 初期位置は山札
+    }
+    // GetterとSetter
+    public Location getLocation() {
+        return location;
+    }
+
+    public void setLocation(Location location) {
+        this.location = location;
+    }
+    // 内部列挙型: カードの位置
+    public enum Location {
+        DECK, // 山札
+        FIELD, // 場
+        PLAYER_HAND, // プレイヤーの手札
+        PLAYER_CAPTURED, // プレイヤーの取り札
+        OPPONENT_HAND, // 相手の手札
+        OPPONENT_CAPTURED // 相手の取り札
     }
     public int getId() {
         return id;

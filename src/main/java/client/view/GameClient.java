@@ -14,15 +14,6 @@ public class GameClient {
     public GameClient(String sessionId) {
         this.sessionId = sessionId;
     }
-    public static void main(String[] args) {
-    try {
-        GameClient client = new GameClient(null); // 初期セッションIDはnull
-        client.initializeSession(); // サーバーからセッションIDを取得
-        client.playCard("1"); // テスト用のカード送信
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-}
     private static final HttpClient CLIENT = HttpClient.newHttpClient();
 
 public void playCard(String cardInfo) throws Exception {
@@ -56,16 +47,18 @@ public String fetchGameState() throws Exception {
     }
 
 }
-public void initializeSession() throws Exception {
+public String initializeSession(String passphrase) throws Exception {
     HttpRequest request = HttpRequest.newBuilder()
             .uri(new URI("http://localhost:10030/session"))
-            .GET()
+            .POST(HttpRequest.BodyPublishers.ofString(passphrase))
+            .header("Content-Type", "text/plain")
             .build();
 
     HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     if (response.statusCode() == 200) {
         this.sessionId = response.body();
         System.out.println("取得したセッションID: " + sessionId);
+        return response.body();
     } else {
         throw new RuntimeException("セッションID取得エラー: " + response.statusCode());
     }

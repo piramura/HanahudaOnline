@@ -3,7 +3,6 @@ import java.util.ArrayList;
 public class Player {
     private ArrayList<Card> hand; // 手札
     private ArrayList<Card> captures; // 取り札
-    private int numRules;
     private int playerID;
 
     public Player() {
@@ -11,17 +10,11 @@ public class Player {
         captures = new ArrayList<>();
     }
     
-    public int chacknumberRules(){
-        return numRules;
-    }
     public void setPlayerID(int num){
         this.playerID = num;
     }
     public int getPlayerID(){
         return this.playerID;
-    }
-    public void setnumberRules(int num){
-        numRules = num;
     }
 
     public void addCardToHand(Card card) {
@@ -36,6 +29,9 @@ public class Player {
     }
 
     public Card playCard(int index) {
+        if (index < 0 || index >= hand.size()) {
+            throw new IllegalArgumentException("不正なカードインデックス: " + index);
+        }
         return hand.remove(index);
         //手札からカードを出すときに使う。indexで管理することで選べるようにしようとした。
     }

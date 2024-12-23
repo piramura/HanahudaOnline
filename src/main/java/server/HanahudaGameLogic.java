@@ -1,140 +1,97 @@
-import java.util.*;
-
+import java.util.ArrayList;
+import java.util.List;
 public class HanahudaGameLogic {
     private Game game;
-    private int currentPlayerIndex = 0;
+    private int currentPlayerIndex;
 
     public HanahudaGameLogic() {
-        game = new Game();
+        resetGame(); // 初期化時にリセット
     }
 
-    public void resetGame() {
-        game = new Game();  // 新しいゲームインスタンス
-        currentPlayerIndex = 0;  // ターン情報を初期化
-        System.out.println("ゲームの内部状態がリセットされました。");
+    public void  resetGame() {
+        Deck deck = new Deck();
+        deck.shuffle();
+        game = new Game(deck,this);
+        setupPlayers();//プレイヤーに初期の手札を配る処理を実行する。
+        setupField();//山札から場に8枚のカードを配置する処理を行う。
+        currentPlayerIndex = 0;
+        System.out.println("ゲーム開始！ 配札完了！");
     }
-
-    public void startGame() {
-        resetGame();  // 内部状態のリセットを一括管理
-        game.getDeck().shuffle();  // 山札をシャッフル
-
-        // プレイヤー作成
+    // プレイヤーをセットアップ
+    private void setupPlayers() {
         for (int i = 0; i < 2; i++) {
-            game.addPlayer(new Player());
-        }
-        game.getPlayers().get(0).setPlayerID(1);
-        game.getPlayers().get(1).setPlayerID(2);
-
-        // 配札処理
-        for (Player player : game.getPlayers()) {
+            Player player = new Player();
+            game.addPlayer(player);
             for (int j = 0; j < 8; j++) {
                 player.addCardToHand(game.getDeck().draw());
             }
         }
-
-        // 場札の配置
-        for (int i = 0; i < 8; i++) {
-            game.getField().addCard(game.getDeck().draw());
-        }
-
-        currentPlayerIndex = 0;  // 最初のプレイヤーを設定
-        System.out.println("ゲーム開始！ 配札完了！");
     }
-
-    public Game getGame() {
+    public Game getGame(){
         return game;
     }
 
-    public int getCurrentPlayerIndex() {
-        return currentPlayerIndex;
+    // 場のカードをセットアップ
+    private void setupField() {
+        for (int i = 0; i < 8; i++) {
+            game.getField().addCard(game.getDeck().draw());
+        }
     }
 
-    public boolean isGameFinished() {
-        // スコアでの終了判定
-        for (Player player : game.getPlayers()) {
-            if (player.chacknumberRules() > 0) {
-                return true;  // スコア成立でゲーム終了
-            }
-        }
-        // 全ターン終了の判定
-        return game.getDeck().getCards().isEmpty() && currentPlayerIndex >= game.getPlayers().size();
-    }
-
-    public String checkRules(int playerIndex) {
-        Player player = game.getPlayers().get(playerIndex);
-        game.checkRules(player);  // 得点は Game クラス内で処理
-        int score = player.chacknumberRules();  // プレイヤーの得点を取得
-        if (score > 0) {
-            return "プレイヤー " + (playerIndex + 1) + " の得点: " + score + "点 獲得！ 総得点: " + score;
-        }
-        return "役は成立しませんでした。";
-    }
-
-    public String getGameState() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("場のカード: ").append(game.getField().toString()).append("\n\n");
-        for (int i = 0; i < game.getPlayers().size(); i++) {
-            Player player = game.getPlayers().get(i);
-            sb.append("プレイヤー ").append(i + 1)
-              .append("の取り札: ").append(player.getCaptures()).append("\n\n");
-        }
-        return sb.toString();
-    }
-
-    public String getWinnerInfo() {
-        int highestScore = 0;
-        int winnerIndex = -1;
-        for (int i = 0; i < game.getPlayers().size(); i++) {
-            int score = game.getPlayers().get(i).chacknumberRules();
-            if (score > highestScore) {
-                highestScore = score;
-                winnerIndex = i;
-            }
-        }
-        if (winnerIndex != -1) {
-            return "プレイヤー " + (winnerIndex + 1) + " が勝者です！";
-        }
-        return "勝者はいません。";
-    }
-
+        // プレイヤーのアクション（カードを出すなど）を処理し、ゲームの進行を制御。
+        // 入力検証、カードのプレイ、ルールの適用を行う。
     public String processPlayerAction(int playerIndex, String action) {
         if (!isCurrentPlayer(playerIndex)) {
             return "エラー: あなたのターンではありません。";
         }
-        if (!action.startsWith("PLAY_CARD:")) {
+
+        String[] parts = validateAction(action);
+        if (parts == null) {
             return "エラー: 不正なコマンド形式です。";
+        }
+        String result="エラー：けっか判定できません。";
+        try {
+        int cardIndex = Integer.parseInt(parts[1]);
+            result = handleCardPlay(playerIndex, cardIndex);
+        } catch (IllegalArgumentException e) {
+            return "エラー: " + e.getMessage();
+        }
+        
+        if (isGameFinished()) {
+            return result;
+        }
+
+        return result + "\n次のターンはプレイヤー " + (currentPlayerIndex + 1) + " です。";
+    }
+    
+
+    
+
+    public String handleCardPlay(int playerIndex, int cardIndex) {//プレイヤーの指定したカードを処理し、ゲームの進行を行う。
+        Player player = game.getPlayers().get(playerIndex);
+        Card playedCard = player.playCard(cardIndex);
+
+        game.getField().processPlayedCard(player, playedCard); // Field に委譲
+        Card drawnCard = game.getDeck().draw();
+        if (drawnCard != null) {
+            game.getField().processDrawnCard(player, drawnCard); // Field に委譲
+        }
+
+        nextTurn();
+        return "プレイヤー " + (playerIndex + 1) + " がカードをプレイしました。\n" + getGameState();
+    }
+
+    private String[] validateAction(String action) {//プレイヤーからの入力を検証し、適切な形式かをチェックする。
+        if (!action.startsWith("PLAY_CARD:")) {
+            return null;
         }
 
         String[] parts = action.split(":");
-        if (parts.length < 2) {
-            return "エラー: カードインデックスが指定されていません。";
+        if (parts.length < 2 || !parts[1].matches("\\d+")) {
+            return null;
         }
 
-        try {
-            int cardIndex = Integer.parseInt(parts[1]);
-            if (cardIndex < 0 || cardIndex >= game.getPlayers().get(playerIndex).getHand().size()) {
-                return "エラー: 存在しないカードインデックスです。";
-            }
-
-            String playResult = playTurn(playerIndex, cardIndex);
-            checkRules(playerIndex);
-
-            if (isGameFinished()) {
-                return playResult + "\nゲーム終了！ 勝者: " + getWinnerInfo();
-            }
-
-            return playResult + "\n次のターンはプレイヤー " + (currentPlayerIndex + 1) + " です。";
-        } catch (NumberFormatException e) {
-            return "エラー: 無効なカードインデックスです。";
-        }
-    }
-
-    private String playTurn(int playerIndex, int cardIndex) {
-        Player player = game.getPlayers().get(playerIndex);
-        Card playedCard = player.playCard(cardIndex);
-        game.playTurn(player, playedCard);
-        nextTurn();
-        return "プレイヤー " + (playerIndex + 1) + " がカードをプレイしました。\n" + getGameState();
+        return parts;
     }
 
     private boolean isCurrentPlayer(int playerIndex) {
@@ -145,21 +102,12 @@ public class HanahudaGameLogic {
         currentPlayerIndex = (currentPlayerIndex + 1) % game.getPlayers().size();
     }
 
-    public String getPlayerGameState(int playerIndex) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("場のカード: ").append(game.getField().toString()).append("\n\n");
+    public boolean isGameFinished() {
+        return game.getDeck().getCards().isEmpty(); // 簡易版の終了条件
+    }
 
-        for (int i = 0; i < game.getPlayers().size(); i++) {
-            Player player = game.getPlayers().get(i);
 
-            if (i == playerIndex) {
-                sb.append("あなたの手札: ").append(player.getHand()).append("\n");
-            } else {
-                sb.append("プレイヤー ").append(i + 1).append(" の手札: ???\n");
-            }
-
-            sb.append("取り札: ").append(player.getCaptures()).append("\n\n");
-        }
-        return sb.toString();
+    public String getGameState() {
+        return game.toString(); // Game クラスの状態表示を利用
     }
 }

@@ -43,4 +43,45 @@ public class Field {
         }
         return "場札: " + rolesString;
     }
+    public void processPlayedCard(Player player, Card playedCard) {
+        // 場に同じ月のカードがあれば取る
+        ArrayList<Card> takenCards = this.takeCardsByMonth(playedCard.getMonth());
+        if (!takenCards.isEmpty()) {
+            Card takenCard = takenCards.remove(0);
+            player.captureCard(takenCard);
+            player.captureCard(playedCard);
+
+            // 残りのカードを場に戻す
+            for (Card remainingCard : takenCards) {
+                this.addCard(remainingCard);
+            }
+
+            System.out.println("場札から取ったカード: " + takenCard);
+        } else {
+            // 同じ月のカードがなければ場に追加
+            this.addCard(playedCard);
+            System.out.println("場に残したカード: " + playedCard);
+        }
+    }
+
+    public void processDrawnCard(Player player, Card drawnCard) {
+        // 山札から引いたカードを場に出して処理
+        ArrayList<Card> drawnTakenCards = this.takeCardsByMonth(drawnCard.getMonth());
+        if (!drawnTakenCards.isEmpty()) {
+            Card drawnTakenCard = drawnTakenCards.remove(0);
+            player.captureCard(drawnTakenCard);
+            player.captureCard(drawnCard);
+
+            // 残りのカードを場に戻す
+            for (Card remainingCard : drawnTakenCards) {
+                this.addCard(remainingCard);
+            }
+
+            System.out.println("山札から引いたカードで場札を取ったカード: " + drawnTakenCard);
+        } else {
+            // 場に追加
+            this.addCard(drawnCard);
+            System.out.println("山札から引いたカードを場に残した: " + drawnCard);
+        }
+    }
 }

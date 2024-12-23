@@ -31,17 +31,9 @@ private void startOnlineMatch() {
 
     // ボタンを無効化
     onlineButton.setEnabled(false);
+    GameController gameController = new GameController();
+    gameController.startOnlineMatch();
 
-    // MultiClientを別スレッドで実行
-    new Thread(() -> {
-        try {
-            GameClient.main(new String[0]); // MultiClientのメインメソッドを呼び出す
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            // エラーが発生した場合、ボタンを再度有効化
-            SwingUtilities.invokeLater(() -> onlineButton.setEnabled(true));
-        }
-    }).start();
 }
 
     public static void main(String[] args) {
