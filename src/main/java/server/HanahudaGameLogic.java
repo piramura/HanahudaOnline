@@ -1,10 +1,10 @@
 import java.util.*;
 
-public class GameManager {
+public class HanahudaGameLogic {
     private Game game;
     private int currentPlayerIndex = 0;
 
-    public GameManager() {
+    public HanahudaGameLogic() {
         game = new Game();
     }
 
@@ -13,6 +13,7 @@ public class GameManager {
         currentPlayerIndex = 0;  // ターン情報を初期化
         System.out.println("ゲームの内部状態がリセットされました。");
     }
+
     public void startGame() {
         resetGame();  // 内部状態のリセットを一括管理
         game.getDeck().shuffle();  // 山札をシャッフル
@@ -39,16 +40,15 @@ public class GameManager {
         currentPlayerIndex = 0;  // 最初のプレイヤーを設定
         System.out.println("ゲーム開始！ 配札完了！");
     }
-    
 
-    public Game getGame(){
+    public Game getGame() {
         return game;
     }
 
-    // 現在のプレイヤーインデックスを返す
     public int getCurrentPlayerIndex() {
         return currentPlayerIndex;
     }
+
     public boolean isGameFinished() {
         // スコアでの終了判定
         for (Player player : game.getPlayers()) {
@@ -57,8 +57,9 @@ public class GameManager {
             }
         }
         // 全ターン終了の判定
-        return game.getDeck().getCards().isEmpty() && currentPlayerIndex >= game.getPlayers().size();//山札なくなってもゲームは終了する
+        return game.getDeck().getCards().isEmpty() && currentPlayerIndex >= game.getPlayers().size();
     }
+
     public String checkRules(int playerIndex) {
         Player player = game.getPlayers().get(playerIndex);
         game.checkRules(player);  // 得点は Game クラス内で処理
@@ -68,9 +69,7 @@ public class GameManager {
         }
         return "役は成立しませんでした。";
     }
-    
 
-    // 現在のゲーム状態を返す
     public String getGameState() {
         StringBuilder sb = new StringBuilder();
         sb.append("場のカード: ").append(game.getField().toString()).append("\n\n");
@@ -81,28 +80,27 @@ public class GameManager {
         }
         return sb.toString();
     }
-    public String getWinnerInfo() {
-    int highestScore = 0;
-    int winnerIndex = -1;
-    for (int i = 0; i < game.getPlayers().size(); i++) {
-        int score = game.getPlayers().get(i).chacknumberRules();
-        if (score > highestScore) {
-            highestScore = score;
-            winnerIndex = i;
-        }
-    }
-    if (winnerIndex != -1) {
-        return "プレイヤー " + (winnerIndex + 1) + " が勝者です！";
-    }
-    return "勝者はいません。";
-}
 
-    // プレイヤーのアクション処理
+    public String getWinnerInfo() {
+        int highestScore = 0;
+        int winnerIndex = -1;
+        for (int i = 0; i < game.getPlayers().size(); i++) {
+            int score = game.getPlayers().get(i).chacknumberRules();
+            if (score > highestScore) {
+                highestScore = score;
+                winnerIndex = i;
+            }
+        }
+        if (winnerIndex != -1) {
+            return "プレイヤー " + (winnerIndex + 1) + " が勝者です！";
+        }
+        return "勝者はいません。";
+    }
+
     public String processPlayerAction(int playerIndex, String action) {
         if (!isCurrentPlayer(playerIndex)) {
             return "エラー: あなたのターンではありません。";
         }
-        // メッセージ形式のバリデーション
         if (!action.startsWith("PLAY_CARD:")) {
             return "エラー: 不正なコマンド形式です。";
         }
@@ -113,50 +111,38 @@ public class GameManager {
         }
 
         try {
-            int cardIndex = Integer.parseInt(action.split(":")[1]);
+            int cardIndex = Integer.parseInt(parts[1]);
             if (cardIndex < 0 || cardIndex >= game.getPlayers().get(playerIndex).getHand().size()) {
                 return "エラー: 存在しないカードインデックスです。";
             }
 
-            // ターンの進行
             String playResult = playTurn(playerIndex, cardIndex);
-
-            // 役判定をここで行う
             checkRules(playerIndex);
 
-            // ゲーム終了判定
             if (isGameFinished()) {
                 return playResult + "\nゲーム終了！ 勝者: " + getWinnerInfo();
             }
 
-            // 次のプレイヤーのターン通知
             return playResult + "\n次のターンはプレイヤー " + (currentPlayerIndex + 1) + " です。";
         } catch (NumberFormatException e) {
             return "エラー: 無効なカードインデックスです。";
         }
     }
 
-    // ターンの進行処理
     private String playTurn(int playerIndex, int cardIndex) {
         Player player = game.getPlayers().get(playerIndex);
         Card playedCard = player.playCard(cardIndex);
         game.playTurn(player, playedCard);
-        // ゲーム状態を送信
-    MultiThreadServer.serverManager.broadcastGameState();
         nextTurn();
         return "プレイヤー " + (playerIndex + 1) + " がカードをプレイしました。\n" + getGameState();
     }
 
-    // 現在のターンのプレイヤーを確認
     private boolean isCurrentPlayer(int playerIndex) {
         return playerIndex == currentPlayerIndex;
     }
 
-    // 次のターンへ進む
     private void nextTurn() {
         currentPlayerIndex = (currentPlayerIndex + 1) % game.getPlayers().size();
-        // サーバーに現在の状態を送信
-    MultiThreadServer.serverManager.broadcastGameState();
     }
 
     public String getPlayerGameState(int playerIndex) {

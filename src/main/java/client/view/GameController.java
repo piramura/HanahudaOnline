@@ -1,141 +1,97 @@
-import java.util.ArrayList;
 import java.util.List;
-import javax.swing.*;
-public class GameController implements GameStateListener{
+
+public class GameController implements GameStateListener {
     private MainFrame mainFrame;
-    private CommClient commClient;
+    private GameClient gameClient;
     private GameStateManager gameStateManager;
-    private int playerID; // プレイヤーIDを保持するフィールド
-    private int currentturn;
-    
-    // プレイヤーIDを設定するメソッドを追加
+    private int playerID; // プレイヤーID
+    private int currentTurn;
+
+    // コンストラクタ
+    public GameController(MainFrame frame, GameClient client) {
+        this.mainFrame = frame;
+        this.gameClient = client;
+        this.gameStateManager = new GameStateManager(); // ゲーム状態管理クラスの初期化
+    }
+
+    // プレイヤーID設定
     public void setPlayerID(int playerID) {
         this.playerID = playerID;
         gameStateManager.setCurrentPlayer(playerID);
     }
-    public void setCurrentTurn(int currentturn) {
-        this.currentturn = currentturn;
-    }
-    public GameController(MainFrame frame, CommClient client) {
-        this.mainFrame = frame;
-        this.commClient = client;
-        this.gameStateManager = new GameStateManager(); // GameStateManagerを内部で初期化
-    }
-    public GameStateManager getGameStateManager() {
-        return this.gameStateManager; // GameController が保持する GameStateManager を返す
-    }
 
+    // 現在のターンを設定
+    public void setCurrentTurn(int currentTurn) {
+        this.currentTurn = currentTurn;
+    }
 
     // ゲーム開始
     public void startGame() {
-        mainFrame.updateBoard(gameStateManager.getFieldCards());
-        mainFrame.updatePlayerHand(gameStateManager.getPlayerHand());
-        mainFrame.updateOpponentHand(gameStateManager.getOpponentHand().size());
-    }
-        // サーバー応答を処理して状態を更新
-    public void updateGameState(List<Integer> fieldCardIDs, List<Integer> playerHandIDs, int opponentHandCount) {
-        // GameStateManager の状態を更新
-        gameStateManager.updateState(fieldCardIDs, playerHandIDs, opponentHandCount);
-
-        // 更新された状態を UI に反映
-        updateUI();
-    }
-    // ゲーム終了処理
-public void handleGameOver() {
-    System.out.println("ゲーム終了処理を実行中...");
-}
-    
-    // 初期化処理
-    private void setupInitialCards() {
-        // 場のカード
-        List<Card> fieldCards = gameStateManager.getFieldCards();
-        mainFrame.updateBoard(fieldCards);
-
-        // プレイヤーの手札
-        List<Card> playerHand = gameStateManager.getPlayerHand();
-        mainFrame.updatePlayerHand(playerHand);
-
-        // 相手の手札
-        int opponentCardCount = gameStateManager.getOpponentHand().size();
-        mainFrame.updateOpponentHand(opponentCardCount);
-
-        mainFrame.repaint();
-    }
-    public void updateTurnInfo(int currentPlayer) {
-    // UIのターン表示を更新
-    mainFrame.updateTurnLabel(currentPlayer );
-}
-
-    // GameController.java
-public void handleCardClick(Card card) {
-    try {
-        if (gameStateManager.getCurrentPlayer() == playerID) { // 現在のターンの確認
-        System.out.println("クリックしたカードID: " + card.getId());
-        sendCardToServer(card.getId());
-    } else {
-        System.out.println("現在のプレイヤーのID: " + gameStateManager.getCurrentPlayer()+" +" +playerID);
-        System.out.println("現在のターンではありません。");
-    }
-    } catch (IllegalArgumentException e) {
-        System.err.println(e.getMessage());
-    }
-}
-    private void sendCardToServer(int cardID) {
-    String message = "PLAY_CARD:" + cardID;
-    try {
-        commClient.send(message); // サーバーに送信
-        System.out.println("サーバーに送信しました: " + message);
-    } catch (Exception e) {
-        System.err.println("サーバーへの送信エラー: " + e.getMessage());
-    }
-}
-
-
-    public void updateUI() {
-        mainFrame.refreshUI(gameStateManager);
-    // System.out.println("UI更新: フィールドカード数=" + gameStateManager.getFieldCards().size());
-    }
-    @Override
-    public void onStateUpdated(GameStateManager manager) {
-        updateUI();
+        syncUIWithGameState(); // UI初期化
     }
 
-    // サーバーにクリック情報を送信
-    private void sendCardClickToServer(int cardID) {
+    // ゲーム状態の更新
+    public void updateGameStateFromServer() {
         try {
-            String message = "PLAY_CARD:" + cardID;
-            commClient.send(message);
-            System.out.println("Sent to server: " + message);
+            String response = gameClient.fetchGameState(); // サーバーから状態を取得
+            // gameStateManager.updateStateFromResponse(response); // レスポンスを解析し状態を更新
+            syncUIWithGameState(); // UI更新
         } catch (Exception e) {
-            System.err.println("Failed to send card click to server: " + e.getMessage());
+            System.err.println("ゲーム状態の更新に失敗しました: " + e.getMessage());
         }
     }
-    // GameStateManager に追加
-public void addCardToArea(int cardID, String area) {
-    Card newCard = gameStateManager.cardFactory.createCard(cardID); // カードを生成
 
-    switch (area) {
-        case "field":
-            gameStateManager.addFieldCard(newCard); // フィールドに追加
-            break;
-        case "hand":
-            gameStateManager.addPlayerCard(newCard); // プレイヤーの手札に追加
-            break;
-        case "opponentHand":
-            gameStateManager.addOpponentCard(newCard);
-            break;
-        default:
-            throw new IllegalArgumentException("無効なエリア指定: " + area);
+    // カードクリック時の処理
+    public void handleCardClick(Card card) {
+        if (gameStateManager.getCurrentPlayer() != playerID) {
+            System.out.println("現在のターンではありません。");
+            return;
+        }
+
+        try {
+            gameClient.playCard(String.valueOf(card.getId())); // カードをサーバーに送信
+            updateGameStateFromServer(); // サーバー応答で状態を更新
+        } catch (Exception e) {
+            System.err.println("カード送信エラー: " + e.getMessage());
+        }
+    }
+
+    // ゲーム終了処理
+    public void handleGameOver() {
+        System.out.println("ゲーム終了: 勝者は " + gameStateManager.getWinnerInfo());
+        mainFrame.displayGameOver(gameStateManager.getWinnerInfo()); // ゲーム終了画面を表示
+    }
+
+    // UI更新
+    private void syncUIWithGameState() {
+        mainFrame.updateBoard(gameStateManager.getFieldCards()); // フィールドカード更新
+        mainFrame.updatePlayerHand(gameStateManager.getPlayerHand()); // プレイヤーの手札更新
+        mainFrame.updateOpponentHand(gameStateManager.getOpponentHand().size()); // 相手の手札数更新
+        mainFrame.updateTurnLabel(gameStateManager.getCurrentPlayer()); // 現在のターンを更新
+    }
+
+    // GameStateListenerインターフェースの実装
+    @Override
+    public void onStateUpdated(GameStateManager manager) {
+        syncUIWithGameState(); // 状態が更新されたらUIを同期
+    }
+
+    // ターン情報の更新
+    public void updateTurn(int turn) {
+        setCurrentTurn(turn);
+        mainFrame.updateTurnLabel(turn);
+        System.out.println("ターンが更新されました: " + turn);
+    }
+
+    // カードをエリアに追加
+    public void addCardToArea(int cardID, String area) {
+        gameStateManager.addCardToArea(cardID, area);
+        syncUIWithGameState(); // UIを更新
+    }
+
+    // 相手の手札の更新
+    public void updateOpponentHand(int count) {
+        gameStateManager.updateOpponentHandCount(count);
+        mainFrame.updateOpponentHand(count);
     }
 }
-public void updateTurn(int turn) {
-    mainFrame.updateTurnLabel(turn);
-    System.out.println("ターンが更新されました: currentturn " + turn);
-}
-public void updateOpponentHand(int count) {
-    gameStateManager.updateOpponentHandCount(count);
-    mainFrame.updateOpponentHand(count); // UIを更新
-}
-    
-}
-

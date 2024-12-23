@@ -114,5 +114,8 @@
         return new CardArea(2, 4);
     }
 
+    public void displayGameOver(String winnerInfo) {
+        JOptionPane.showMessageDialog(this, "ゲーム終了: " + winnerInfo, "ゲーム終了", JOptionPane.INFORMATION_MESSAGE);
+    }
 
     }
