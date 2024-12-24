@@ -122,45 +122,8 @@ if (line.startsWith("現在のターン:")) {
     }
     public GameController() {
         this.mainFrame = new MainFrame(this);
-        // ウィンドウ閉鎖時のイベントハンドリング
-        this.mainFrame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE); // 強制終了を防ぐ
-        this.mainFrame.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                handleWindowClose();
-            }
-        });
-
-        // シャットダウンフックの追加
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                if (gameClient != null) {
-                    System.out.println("シャットダウンフック: サーバー接続を切断します...");
-                    gameClient.disconnect();
-                }
-            } catch (Exception ex) {
-                System.err.println("シャットダウンフック中のエラー: " + ex.getMessage());
-            }
-        }));
+        
     }
-    private void handleWindowClose() {
-        int confirm = JOptionPane.showConfirmDialog(
-            mainFrame,
-            "ゲームを終了してもよろしいですか？",
-            "終了確認",
-            JOptionPane.YES_NO_OPTION
-        );
-
-        if (confirm == JOptionPane.YES_OPTION) {
-            try {
-                if (gameClient != null) {
-                    gameClient.disconnect(); // サーバーに切断通知を送る
-                }
-            } catch (Exception ex) {
-                System.err.println("ウィンドウ閉鎖時の切断エラー: " + ex.getMessage());
-            }
-            System.exit(0); // アプリケーションを終了
-        }
     public void setGameClient(GameClient gameClient) {
         this.gameClient = gameClient;
     }

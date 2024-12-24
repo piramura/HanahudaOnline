@@ -10,7 +10,7 @@ public class GameClient {
     private GameController controller;
     // コンストラクタでURLを受け取る
     public GameClient(String serverUrl) {
-        this.serverUrl = serverUrl != null ? serverUrl : "http://localhost:10030"; // デフォルト値を設定
+        this.serverUrl = "https://hanahudaonline.onrender.com"; // デフォルト値を設定
     }
     public void setGameController(GameController controller){
         this.controller = controller;
