@@ -5,7 +5,7 @@ FROM openjdk:23-jdk
 WORKDIR /app
 
 # JAR ファイルをコンテナにコピー
-COPY hanahuda-online.jar app.jar
+COPY /src/server/hanahuda-online.jar app.jar
 
 # 必要なポートを公開（アプリケーションで使用するポート）
 EXPOSE 10030

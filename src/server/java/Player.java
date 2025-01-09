@@ -4,10 +4,18 @@ public class Player {
     private ArrayList<Card> hand; // 手札
     private ArrayList<Card> captures; // 取り札
     private int playerID;
+    private boolean declaredEnd = false; // 「こいこい」をしないと宣言した場合のフラグ
 
     public Player() {
         hand = new ArrayList<>();
         captures = new ArrayList<>();
+    }
+    public boolean hasDeclaredEnd() {
+        return declaredEnd;
+    }
+    
+    public void declareEnd() {
+        this.declaredEnd = true;
     }
     
     public void setPlayerID(int num){

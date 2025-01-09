@@ -100,6 +100,10 @@ public class GameSessionManager {
         if (playerNumber == null) {
             return "ERROR: セッションが見つかりません";
         }
+        if (gamelogic.isGameFinished()) {
+            return "ゲーム終了: プレイヤー " + playerId + " が勝利しました！";
+        }
+        
 
         StringBuilder gameState = new StringBuilder();
         gameState.append("Field: ");

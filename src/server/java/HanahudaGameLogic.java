@@ -40,6 +40,7 @@ public class HanahudaGameLogic {
         if (!isCurrentPlayer(playerIndex)) {
             return "エラー: あなたのターンではありません。";
         }
+        
 
         String[] parts = validateAction(action);
         if (parts == null) {
@@ -52,6 +53,10 @@ public class HanahudaGameLogic {
             result = handleCardPlay(playerIndex, cardIndex);
         } catch (IllegalArgumentException e) {
             return "エラー: " + e.getMessage();
+        }
+        if (action.startsWith("DECLARE_END")) {
+            game.getPlayers().get(playerIndex).declareEnd();
+            return "プレイヤー " + (playerIndex + 1) + " がゲームを終了しました。";
         }
         
         if (isGameFinished()) {
@@ -114,7 +119,10 @@ public class HanahudaGameLogic {
     }
 
     public boolean isGameFinished() {
-        return game.getDeck().getCards().isEmpty(); // 簡易版の終了条件
+        boolean bothHandsEmpty = game.getPlayers().stream().allMatch(player -> player.getHand().isEmpty());
+        boolean anyPlayerDeclaredEnd = game.getPlayers().stream().anyMatch(Player::hasDeclaredEnd);
+        // 両方のプレイヤーの手札が空、またはどちらかが役を成立させ「こいこい」をしない場合
+        return bothHandsEmpty || anyPlayerDeclaredEnd;
     }
 
 

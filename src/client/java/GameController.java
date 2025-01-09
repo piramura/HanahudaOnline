@@ -76,6 +76,25 @@ public class GameController {
 
     return stateChanged; // 変更があった場合に true を返す
 }
+public void handleKoikoiOption() {
+    int choice = JOptionPane.showConfirmDialog(
+        mainFrame,
+        "役が成立しました！こいこいしますか？",
+        "こいこいの選択",
+        JOptionPane.YES_NO_OPTION
+    );
+
+    try {
+        if (choice == JOptionPane.YES_OPTION) {
+            System.out.println("プレイヤーがこいこいを選択しました。");
+        } else {
+            gameClient.playCard("DECLARE_END", playerId);
+        }
+    } catch (Exception e) {
+        System.err.println("こいこい選択処理中にエラーが発生しました: " + e.getMessage());
+    }
+}
+
 public void pollGameState() {
     Timer timer = new Timer(1000, e -> {
         try {
@@ -90,6 +109,11 @@ public void pollGameState() {
 }
 
 public void parseGameState(String rawGameState) {
+    if (rawGameState.contains("ゲーム終了")) {
+        JOptionPane.showMessageDialog(mainFrame, "ゲームが終了しました！", "終了通知", JOptionPane.INFORMATION_MESSAGE);
+        mainFrame.dispose();
+        return;
+    }
     String[] lines = rawGameState.split("\n");
 
         for (String line : lines) {
