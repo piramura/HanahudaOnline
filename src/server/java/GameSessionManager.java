@@ -13,7 +13,7 @@ public class GameSessionManager {
     public GameSessionManager(ClientSessionManager clientSessionManager) {
         this.clientSessionManager = clientSessionManager;
         this.clientSessions = clientSessionManager.getSessions();
-    System.out.println("初期化時のセッション: " + clientSessions);
+        System.out.println("初期化時のセッション: " + clientSessions);
     }
     public static synchronized GameSessionManager getInstance(ClientSessionManager clientSessionManager) {
         if (instance == null) {
@@ -64,6 +64,7 @@ public class GameSessionManager {
         return clientSessions.get(sessionId);
     }
     private boolean areAllClientsReady() {
+        System.out.println("clientReadyStates.size(: " + clientReadyStates.size());
         return clientReadyStates.size() == 2 && clientReadyStates.values().stream().allMatch(ready -> ready);
     }
     public synchronized String processMessage(String sessionId, String message) {
@@ -101,7 +102,7 @@ public class GameSessionManager {
             return "ERROR: セッションが見つかりません";
         }
         if (gamelogic.isGameFinished()) {
-            return "ゲーム終了: プレイヤー " + playerId + " が勝利しました！";
+            return "ゲーム終了: プレイヤー " + playerNumber+ " が勝利しました！";
         }
         
 
@@ -122,23 +123,36 @@ public class GameSessionManager {
         gameState.append("現在のターン: ").append(game.getNowTurn()).append("\n");
 
         return gameState.toString();
-}
-public synchronized int getPlayerId(String sessionId) {
-    Integer playerNumber = clientSessions.get(sessionId);
-    if (playerNumber == null) {
-        throw new IllegalArgumentException("セッションが見つかりません: " + sessionId);
     }
-    return playerNumber;
-}
-public synchronized boolean removeSession(String sessionId) {
-    Integer playerNumber = clientSessions.remove(sessionId); // セッションを削除
-    clientSessionManager.removeSession(sessionId);
-    if (playerNumber != null) {
-        System.out.println("セッションID " + sessionId + " のプレイヤー " + playerNumber + " を削除しました。");
-        return true;
-    } else {
-        System.out.println("セッションID " + sessionId + " は見つかりませんでした。");
-        return false;
+    public synchronized int getPlayerId(String sessionId) {
+        Integer playerNumber = clientSessions.get(sessionId);
+        if (playerNumber == null) {
+            throw new IllegalArgumentException("セッションが見つかりません: " + sessionId);
+        }
+        return playerNumber;
     }
-}
+    public synchronized boolean removeSession(String sessionId) {
+        Integer playerNumber = clientSessions.remove(sessionId); // セッションを削除
+        clientSessionManager.removeSession(sessionId);
+        if (playerNumber != null) {
+            System.out.println("セッションID " + sessionId + " のプレイヤー " + playerNumber + " を削除しました。");
+            // ➡️ すべてのセッションが削除された場合
+            if (clientSessions.isEmpty()) {
+                System.out.println("すべてのプレイヤーが切断されました。ゲームセッションをリセットします。");
+                resetAllStates(); // すべての状態をリセット
+                HanahudaServer.resetGameSession();
+            }
+            return true;
+        } else {
+            System.out.println("セッションID " + sessionId + " は見つかりませんでした。");
+            return false;
+        }
+    }
+    // ➡️ ゲームセッションのすべての状態をリセット
+    private void resetAllStates() {
+        clientSessions.clear();
+        clientReadyStates.clear();
+        gameStarted = false;
+        System.out.println("すべてのゲーム状態がリセットされました。");
+    }
 }

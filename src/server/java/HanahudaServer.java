@@ -10,6 +10,9 @@ import java.net.InetSocketAddress;
 // import java.net.InetSocketAddress;
 
 public class HanahudaServer {
+    private static ClientSessionManager clientSessionManager;
+    private static GameSessionManager gameSessionManager;
+
     public static void main(String[] args) throws Exception {
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "10030"));
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
@@ -30,7 +33,14 @@ public class HanahudaServer {
         System.out.println("サーバーがポート " + port + " で起動しました。");
         server.start();
     }
+    // ゲームセッションを初期化するメソッド
+    public static void resetGameSession() {
+        clientSessionManager = new ClientSessionManager();
+        gameSessionManager = GameSessionManager.getInstance(clientSessionManager);
+        System.out.println("ゲームセッションがリセットされました。次のプレイヤーを待っています...");
+    }
 }
+
 
 class PlayCardHandler implements HttpHandler {
     private GameSessionManager gameSessionManager;

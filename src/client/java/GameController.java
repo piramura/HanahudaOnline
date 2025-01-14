@@ -43,115 +43,116 @@ public class GameController {
         this.currentTurn = currentTurn;
     }
     public boolean isChange(String rawGameState) {
-    boolean stateChanged = false;
-
-    String[] lines = rawGameState.split("\n");
-    for (String line : lines) {
-        if (line.startsWith("Field:")) {
-            List<Integer> newField = parseCardList(line.substring(7));
-            if (!newField.equals(getField())) {
-                setField(newField);
-                stateChanged = true;
-            }
-        } else if (line.startsWith("Player1 :")) {
-            List<Integer> newPlayer1Cards = parseCardList(line.substring(10));
-            if (!newPlayer1Cards.equals(getPlayer1Cards())) {
-                setPlayer1Cards(newPlayer1Cards);
-                stateChanged = true;
-            }
-        } else if (line.startsWith("Player2 :")) {
-            List<Integer> newPlayer2Cards = parseCardList(line.substring(10));
-            if (!newPlayer2Cards.equals(getPlayer2Cards())) {
-                setPlayer2Cards(newPlayer2Cards);
-                stateChanged = true;
-            }
-        } else if (line.startsWith("現在のターン:")) {
-            int newTurn = Integer.parseInt(line.substring(7).trim());
-            if (newTurn != getCurrentTurn()) {
-                setCurrentTurn(newTurn);
-                stateChanged = true;
+        boolean stateChanged = false;
+        String[] lines = rawGameState.split("\n");
+        for (String line : lines) {
+            if (line.startsWith("Field:")) {
+                List<Integer> newField = parseCardList(line.substring(7));
+                if (!newField.equals(getField())) {
+                    setField(newField);
+                    stateChanged = true;
+                }
+            } else if (line.startsWith("Player1 :")) {
+                List<Integer> newPlayer1Cards = parseCardList(line.substring(10));
+                if (!newPlayer1Cards.equals(getPlayer1Cards())) {
+                    setPlayer1Cards(newPlayer1Cards);
+                    stateChanged = true;
+                }
+            } else if (line.startsWith("Player2 :")) {
+                List<Integer> newPlayer2Cards = parseCardList(line.substring(10));
+                if (!newPlayer2Cards.equals(getPlayer2Cards())) {
+                    setPlayer2Cards(newPlayer2Cards);
+                    stateChanged = true;
+                }
+            } else if (line.startsWith("現在のターン:")) {
+                int newTurn = Integer.parseInt(line.substring(7).trim());
+                if (newTurn != getCurrentTurn()) {
+                    setCurrentTurn(newTurn);
+                    stateChanged = true;
+                }
             }
         }
+        return stateChanged; // 変更があった場合に true を返す
     }
 
-    return stateChanged; // 変更があった場合に true を返す
-}
-public void handleKoikoiOption() {
-    int choice = JOptionPane.showConfirmDialog(
-        mainFrame,
-        "役が成立しました！こいこいしますか？",
-        "こいこいの選択",
-        JOptionPane.YES_NO_OPTION
-    );
 
-    try {
-        if (choice == JOptionPane.YES_OPTION) {
-            System.out.println("プレイヤーがこいこいを選択しました。");
-        } else {
-            gameClient.playCard("DECLARE_END", playerId);
-        }
-    } catch (Exception e) {
-        System.err.println("こいこい選択処理中にエラーが発生しました: " + e.getMessage());
-    }
-}
-
-public void pollGameState() {
-    Timer timer = new Timer(1000, e -> {
-        try {
-            
+    public void pollGameState() {
+        Timer timer = new Timer(1000, e -> {
+            try {
                 gameClient.fetchGameState();
-            
-        } catch (Exception ex) {
-            System.err.println("ゲーム状態の取得に失敗: " + ex.getMessage());
-        }
-    });
-    timer.start();
-}
-
-public void parseGameState(String rawGameState) {
-    if (rawGameState.contains("ゲーム終了")) {
-        JOptionPane.showMessageDialog(mainFrame, "ゲームが終了しました！", "終了通知", JOptionPane.INFORMATION_MESSAGE);
-        mainFrame.dispose();
-        return;
+            } catch (Exception ex) {
+                System.err.println("ゲーム状態の取得に失敗: " + ex.getMessage());
+            }
+        });
+        timer.start();
     }
-    String[] lines = rawGameState.split("\n");
+    public void handleKoikoiOption() {
+        int choice = JOptionPane.showConfirmDialog(
+            mainFrame,
+            "役が成立しました！こいこいしますか？",
+            "こいこいの選択",
+            JOptionPane.YES_NO_OPTION
+        );
+        try {
+            if (choice == JOptionPane.YES_OPTION) {
+                gameClient.playCard(-1, playerId); // こいこい
+                System.out.println("プレイヤーがこいこいを選択しました。");
+            } else {
+                gameClient.playCard(0, playerId); // ゲーム終了
+                System.out.println("プレイヤーがゲーム終了を選択しました。");
+                gameClient.disconnect();
+            }
+        } catch (Exception e) {
+            System.err.println("こいこい選択処理中にエラーが発生しました: " + e.getMessage());
+        }
+    }
 
+    public void parseGameState(String rawGameState) {
+        if (rawGameState.contains("ゲーム終了")) {
+            JOptionPane.showMessageDialog(mainFrame, "ゲームが終了しました！", "終了通知", JOptionPane.INFORMATION_MESSAGE);
+            try{
+               gameClient.disconnect();
+            } catch (Exception e) {
+                System.err.println("カード送信エラー: " + e.getMessage());
+            }
+            mainFrame.dispose();
+            return;
+        }
+        String[] lines = rawGameState.split("\n");
         for (String line : lines) {
             if (line.startsWith("Field:")) {
                 setField(parseCardList(line.substring(7)));
             }
             if (line.startsWith("Player1 :")) {
-    if (playerId == 1) {
-        System.out.println("Player1 情報を自分のカードとして設定: " + line.substring(10));
-        setPlayer1Cards(parseCardList(line.substring(10)));
-    } else {
-        System.out.println("Player1 情報を相手のカードとして設定: " + line.substring(10));
-        setPlayer2Cards(parseCardList(line.substring(10)));
-    }
-}
-if (line.startsWith("Player2 :")) {
-    if (playerId == 2) {
-        System.out.println("Player2 情報を自分のカードとして設定: " + line.substring(10));
-        setPlayer1Cards(parseCardList(line.substring(10)));
-    } else {
-        System.out.println("Player2 情報を相手のカードとして設定: " + line.substring(10));
-        setPlayer2Cards(parseCardList(line.substring(10)));
-    }
-}
-if (line.startsWith("現在のターン:")) {
+                if (playerId == 1) {
+                    System.out.println("Player1 情報を自分のカードとして設定: " + line.substring(10));
+                    setPlayer1Cards(parseCardList(line.substring(10)));
+                } else {
+                    System.out.println("Player1 情報を相手のカードとして設定: " + line.substring(10));
+                    setPlayer2Cards(parseCardList(line.substring(10)));
+                }
+            }
+            if (line.startsWith("Player2 :")) {
+                if (playerId == 2) {
+                    System.out.println("Player2 情報を自分のカードとして設定: " + line.substring(10));
+                    setPlayer1Cards(parseCardList(line.substring(10)));
+                } else {
+                    System.out.println("Player2 情報を相手のカードとして設定: " + line.substring(10));
+                    setPlayer2Cards(parseCardList(line.substring(10)));
+                }
+            }
+            if (line.startsWith("現在のターン:")) {
                 setCurrentTurn(Integer.parseInt(line.substring(7).trim()));
             }
         }
-        
-            refreshUI();
-}
-        
+        refreshUI();
+    }
     public void refreshUI() {
-    mainFrame.updateBoard(getField());
+        mainFrame.updateBoard(getField());
         mainFrame.updatePlayerHand(getPlayer1Cards());
         mainFrame.updateOpponentHand(getPlayer2Cards().size());
-    mainFrame.updadateTurn(getCurrentTurn());
-}
+        mainFrame.updadateTurn(getCurrentTurn());
+    }
     private List<Integer> parseCardList(String cardString) {
         List<Integer> cardList = new ArrayList<>();
         String[] cardNumbers = cardString.split(",");
@@ -233,14 +234,13 @@ if (line.startsWith("現在のターン:")) {
     }
     
     // クライアントで通知を処理するメソッド
-public void handleDisconnectionNotification(String message) {
-    if (message.startsWith("DISCONNECTED_PLAYER:")) {
-        int disconnectedPlayer = Integer.parseInt(message.split(":")[1].trim());
-        System.out.println("プレイヤー " + disconnectedPlayer + " が切断されました。");
+    public void handleDisconnectionNotification(String message) {
+        if (message.startsWith("DISCONNECTED_PLAYER:")) {
+            int disconnectedPlayer = Integer.parseInt(message.split(":")[1].trim());
+            System.out.println("プレイヤー " + disconnectedPlayer + " が切断されました。");
 
-        // ゲーム画面を更新
-        mainFrame.showDisconnectionMessage(disconnectedPlayer);
+            // ゲーム画面を更新
+            mainFrame.showDisconnectionMessage(disconnectedPlayer);
+        }
     }
-}
-
 }

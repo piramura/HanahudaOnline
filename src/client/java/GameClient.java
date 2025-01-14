@@ -33,19 +33,18 @@ public class GameClient {
         }
     }
     public int fetchPlayerId() throws Exception {
-    HttpRequest request = HttpRequest.newBuilder()
-        .uri(new URI(serverUrl + "/game/playerId")) // PlayerID取得のエンドポイント
-        .GET()
-        .header("Session-ID", sessionId)
-        .build();
-
-    HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    if (response.statusCode() == 200) {
-        return Integer.parseInt(response.body());
-    } else {
-        throw new RuntimeException("プレイヤーID取得エラー: " + response.statusCode());
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI(serverUrl + "/game/playerId")) // PlayerID取得のエンドポイント
+            .GET()
+            .header("Session-ID", sessionId)
+            .build();
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            return Integer.parseInt(response.body());
+        } else {
+            throw new RuntimeException("プレイヤーID取得エラー: " + response.statusCode());
+        }
     }
-}
 
     // 準備完了通知
     public void ready() throws Exception {
@@ -118,23 +117,22 @@ public class GameClient {
         }
     }
     public void disconnect() throws Exception {
-    if (sessionId == null || sessionId.isEmpty()) {
-        System.out.println("セッションIDが未設定のため、切断通知をスキップします。");
-        return;
-    }
+        if (sessionId == null || sessionId.isEmpty()) {
+            System.out.println("セッションIDが未設定のため、切断通知をスキップします。");
+            return;
+        }
 
-    HttpRequest request = HttpRequest.newBuilder()
-        .uri(new URI(serverUrl + "/session/terminate"))
-        .POST(HttpRequest.BodyPublishers.noBody())
-        .header("Session-ID", sessionId)
-        .build();
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI(serverUrl + "/session/terminate"))
+            .POST(HttpRequest.BodyPublishers.noBody())
+            .header("Session-ID", sessionId)
+            .build();
 
-    HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    if (response.statusCode() == 200) {
-        System.out.println("切断通知成功: " + response.body());
-    } else {
-        System.err.println("切断通知エラー: " + response.statusCode());
-    }
-}   
-
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            System.out.println("切断通知成功: " + response.body());
+        } else {
+            System.err.println("切断通知エラー: " + response.statusCode());
+        }
+    }   
 }

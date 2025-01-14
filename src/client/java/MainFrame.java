@@ -32,32 +32,50 @@ public class MainFrame extends JFrame {
 
         // 相手の手札エリア
         add(opponentHandArea, BorderLayout.NORTH);
-
+        // ➡️ 「ゲーム終了」ボタンの追加
+        JButton exitButton = new JButton("ゲーム終了");
+        exitButton.addActionListener(e -> {
+            try {
+                controller.getGameClient().disconnect();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "切断中にエラーが発生しました: " + ex.getMessage());
+            }
+        });
+        add(exitButton, BorderLayout.EAST);
     }
 
     public void updateBoard(List<Integer> fieldCards) {
-        boardArea.clearCards(); // 既存のカードを削除
-    // ボードエリアをリセットして更新
-    SwingUtilities.invokeLater(() -> {
-        
-        for (int cardId : fieldCards) {
-            boardArea.addCard(cardId); // 新しいカードを追加
+        // Nullチェックを追加
+        if (fieldCards == null) {
+            System.err.println("fieldCardsが null です。");
+            return;
         }
-    });
-}
+        boardArea.clearCards(); // 既存のカードを削除
+        // ボードエリアをリセットして更新
+        SwingUtilities.invokeLater(() -> {
+            for (int cardId : fieldCards) {
+                boardArea.addCard(cardId); // 新しいカードを追加
+            }
+        });
+    }
 
 
     public void updatePlayerHand(List<Integer> playerHand) {
+        // Nullチェックを追加
+        if (playerHand == null) {
+            System.err.println("プレイヤーの手札が null です。");
+            return;
+        }
         playerHandArea.clearCards(); // 既存のカードを削除
         SwingUtilities.invokeLater(() -> {
-        
-        for (int cardId : playerHand) {
-            playerHandArea.addCard(cardId); // 新しいカードを追加
-        }
-    });
+            for (int cardId : playerHand) {
+                playerHandArea.addCard(cardId); // 新しいカードを追加
+            }
+        });
     }
 
     public void updateOpponentHand(int count) {
+        
         opponentHandArea.clearCards();
         SwingUtilities.invokeLater(() -> {
         
