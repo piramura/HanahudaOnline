@@ -27,6 +27,8 @@ public class HanahudaServer {
         server.createContext("/session", new SessionHandler(clientSessionManager));
         server.createContext("/game/playerId", new PlayerIdHandler(gameSessionManager));
         server.createContext("/session/terminate", new TerminateSessionHandler(gameSessionManager));
+        // server.createContext("/game/playerInfo", new PlayerInfoHandler(gameSessionManager));
+        server.createContext("/game/player", new PlayerHandler(gameSessionManager));
 
 
         server.setExecutor(null);
@@ -215,6 +217,148 @@ class TerminateSessionHandler implements HttpHandler {
         boolean removed = sessionManager.removeSession(sessionId);
         String response = removed ? "セッション削除成功" : "ERROR: セッションが見つかりません。";
         exchange.sendResponseHeaders(200, response.getBytes().length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
+    }
+}
+// class PlayerInfoHandler implements HttpHandler {
+//     private GameSessionManager gameSessionManager;
+
+//     public PlayerInfoHandler(GameSessionManager gameSessionManager) {
+//         this.gameSessionManager = gameSessionManager;
+//     }
+
+//     @Override
+//     public void handle(HttpExchange exchange) throws IOException {
+//         if (!"POST".equals(exchange.getRequestMethod())) {
+//             exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+//             return;
+//         }
+
+//         String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
+//         if (sessionId == null || sessionId.isEmpty()) {
+//             String response = "ERROR: セッションIDが提供されていません";
+//             exchange.sendResponseHeaders(400, response.getBytes().length);
+//             try (OutputStream os = exchange.getResponseBody()) {
+//                 os.write(response.getBytes());
+//             }
+//             return;
+//         }
+
+//         // リクエストボディを解析
+//         String body = new String(exchange.getRequestBody().readAllBytes());
+//         System.out.println("[DEBUG] 受信したプレイヤー情報: " + body);
+//         String[] parts = body.split(":");
+//         if (parts.length != 3) {
+//             String response = "ERROR: 無効なリクエスト形式";
+//             exchange.sendResponseHeaders(400, response.getBytes().length);
+//             try (OutputStream os = exchange.getResponseBody()) {
+//                 os.write(response.getBytes());
+//             }
+//             return;
+//         }
+
+//         String playerName = parts[0];
+//         int iconNum = Integer.parseInt(parts[1]);
+//         int level = Integer.parseInt(parts[2]);
+
+//         try {
+//             int playerId = gameSessionManager.getPlayerId(sessionId);
+//             gameSessionManager.setPlayerInfo(playerId, playerName, iconNum, level);
+//             String response = "Player info saved: " + playerName;
+//             exchange.sendResponseHeaders(200, response.getBytes().length);
+//             try (OutputStream os = exchange.getResponseBody()) {
+//                 os.write(response.getBytes());
+//             }
+//         } catch (Exception e) {
+//             String response = "ERROR: " + e.getMessage();
+//             exchange.sendResponseHeaders(500, response.getBytes().length);
+//             try (OutputStream os = exchange.getResponseBody()) {
+//                 os.write(response.getBytes());
+//             }
+//         }
+//     }
+// }
+class PlayerHandler implements HttpHandler {
+    private GameSessionManager gameSessionManager;
+
+    public PlayerHandler(GameSessionManager gameSessionManager) {
+        this.gameSessionManager = gameSessionManager;
+    }
+
+    @Override
+    public void handle(HttpExchange exchange) throws IOException {
+        String method = exchange.getRequestMethod();
+
+        // プレイヤー情報の登録/更新 (POST)
+        if ("POST".equalsIgnoreCase(method)) {
+            handlePost(exchange);
+            return;
+        }
+
+        // プレイヤー情報の取得 (GET)
+        if ("GET".equalsIgnoreCase(method)) {
+            handleGet(exchange);
+            return;
+        }
+
+        exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+    }
+
+    private void handlePost(HttpExchange exchange) throws IOException {
+        String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
+        if (sessionId == null || sessionId.isEmpty()) {
+            sendResponse(exchange, 400, "ERROR: セッションIDが提供されていません");
+            return;
+        }
+
+        String body = new String(exchange.getRequestBody().readAllBytes());
+        String[] parts = body.split(":");
+        if (parts.length != 3) {
+            sendResponse(exchange, 400, "ERROR: 無効なリクエスト形式");
+            return;
+        }
+
+        String playerName = parts[0];
+        int iconNum = Integer.parseInt(parts[1]);
+        int level = Integer.parseInt(parts[2]);
+
+        try {
+            int playerId = gameSessionManager.getPlayerId(sessionId);
+            gameSessionManager.setPlayerInfo(playerId, playerName, iconNum, level);
+            sendResponse(exchange, 200, "Player info saved: " + playerName);
+        } catch (Exception e) {
+            sendResponse(exchange, 500, "ERROR: " + e.getMessage());
+        }
+    }
+
+    private void handleGet(HttpExchange exchange) throws IOException {
+        String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
+        if (sessionId == null || sessionId.isEmpty()) {
+            sendResponse(exchange, 400, "ERROR: セッションIDが提供されていません");
+            return;
+        }
+
+        try {
+            int playerId = gameSessionManager.getPlayerId(sessionId);
+            PlayerInfo playerInfo = gameSessionManager.getPlayerInfo(playerId);
+            PlayerInfo opponentInfo = gameSessionManager.getOpponentInfo(playerId);
+
+            String response = "Your Info - Name: " + playerInfo.getPlayerName() +
+                              ", Icon: " + playerInfo.getIconNum() +
+                              ", Level: " + playerInfo.getLevel() +
+                              "\nOpponent Info - Name: " + opponentInfo.getPlayerName() +
+                              ", Icon: " + opponentInfo.getIconNum() +
+                              ", Level: " + opponentInfo.getLevel();
+            sendResponse(exchange, 200, response);
+        } catch (Exception e) {
+            sendResponse(exchange, 500, "ERROR: " + e.getMessage());
+        }
+    }
+
+    private void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
+        exchange.sendResponseHeaders(statusCode, response.getBytes().length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes());
         }

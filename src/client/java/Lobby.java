@@ -39,19 +39,6 @@ public class Lobby extends JFrame {
         gameController.startOnlineMatch();
 
     }
-    // ➡️ Ctrl + C で切断処理を行う
-    private void addShutdownHook() {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            if (client != null) {
-                try {
-                    System.out.println("Ctrl + C 検出: 切断処理を実行中...");
-                    client.disconnect();
-                } catch (Exception e) {
-                    System.err.println("切断処理中にエラーが発生しました: " + e.getMessage());
-                }
-            }
-        }));
-    }
     public static void main(String[] args) {
         new Lobby();
     }

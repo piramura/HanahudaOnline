@@ -10,6 +10,9 @@ public class GameSessionManager {
     private boolean gameStarted = false;
 
     private int maxClients = 2;
+    //プレイヤー情報を保持するマップ
+    private Map<Integer, PlayerInfo> playerInfoMap = new HashMap<>();
+    
     public GameSessionManager(ClientSessionManager clientSessionManager) {
         this.clientSessionManager = clientSessionManager;
         this.clientSessions = clientSessionManager.getSessions();
@@ -21,7 +24,22 @@ public class GameSessionManager {
         }
         return instance;
     }
-
+    public synchronized PlayerInfo getPlayerInfo(int playerId) {
+        return playerInfoMap.get(playerId);
+    }
+    
+    public synchronized PlayerInfo getOpponentInfo(int playerId) {
+        int opponentId = (playerId == 1) ? 2 : 1; // 2人用ゲームを想定
+        return playerInfoMap.get(opponentId);
+    }
+    
+    //プレイヤー情報を追加
+    public synchronized void setPlayerInfo(int playerId, String playerName, int iconNum, int level) {
+        PlayerInfo info = new PlayerInfo(playerName, iconNum, level);
+        playerInfoMap.put(playerId, info);
+        System.out.println("Player info updated: " + info);
+    }
+    
     public synchronized String addClient(String sessionId) {
         if (!clientSessionManager.isValidSession(sessionId)) {
             return "ERROR: セッションが無効です";
@@ -114,14 +132,20 @@ public class GameSessionManager {
         gameState.append("\n");
 
         for (int i = 0; i < game.getPlayers().size(); i++) {
-            gameState.append("Player").append(i + 1).append(" : ");
+            gameState.append("PlayerHand").append(i + 1).append(" : ");
                 for (Card card : game.getPlayers().get(i).getHand()) {
+                    gameState.append(card.getId()).append(",");
+                }
+            gameState.append("\n");
+            gameState.append("PlayerCaptures").append(i + 1).append(" : ");
+                for (Card card : game.getPlayers().get(i).getCaptures()) {
                     gameState.append(card.getId()).append(",");
                 }
             gameState.append("\n");
         }
         gameState.append("現在のターン: ").append(game.getNowTurn()).append("\n");
 
+        System.out.println("DEBUG ゲーム状態: " + gameState);
         return gameState.toString();
     }
     public synchronized int getPlayerId(String sessionId) {

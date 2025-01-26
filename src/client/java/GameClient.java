@@ -45,7 +45,40 @@ public class GameClient {
             throw new RuntimeException("プレイヤーID取得エラー: " + response.statusCode());
         }
     }
-
+    //自分の情報を送る
+    public void sendPlayerInfo(String playerName, int iconNum, int level) throws Exception {
+        String message = String.format("%s:%d:%d", playerName, iconNum, level);
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI(serverUrl + "/game/player"))
+            .POST(HttpRequest.BodyPublishers.ofString(message))
+            .header("Session-ID", sessionId)
+            .header("Content-Type", "text/plain")
+            .build();
+    
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            System.out.println("Player info sent successfully: " + response.body());
+        } else {
+            throw new RuntimeException("Failed to send player info: " + response.statusCode());
+        }
+    }
+    //相手の情報を取り出す
+    public String fetchPlayerInfo() throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(new URI(serverUrl + "/game/player"))
+            .GET()
+            .header("Session-ID", sessionId)
+            .build();
+    
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 200) {
+            System.out.println("Player info fetched successfully: " + response.body());
+            return response.body();
+        } else {
+            throw new RuntimeException("Failed to fetch player info: " + response.statusCode());
+        }
+    }
+    
     // 準備完了通知
     public void ready() throws Exception {
         System.out.println("準備完了通知送信URL: " + serverUrl + "/game/ready");
@@ -91,11 +124,13 @@ public class GameClient {
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
             System.out.println("ゲーム状態: " + response.body());
+            //
             controller.parseGameState(response.body());
         } else {
             throw new RuntimeException("ゲーム状態取得エラー: " + response.statusCode());
         }
     }
+    
     
     
 
