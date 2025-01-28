@@ -95,7 +95,8 @@ public class GameSessionManager {
         if (playerNumber == null) {
             return "ERROR: セッションが見つかりません";
         }
-
+        System.out.println("processMessageを処理中");
+        System.out.println(message);
         // PLAY_CARD コマンドの処理
         if (message.startsWith("PLAY_CARD")) {
             String[] parts = message.split(":");

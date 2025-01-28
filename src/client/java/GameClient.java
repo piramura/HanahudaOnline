@@ -2,7 +2,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
-import java.util.Scanner;
+import java.net.URISyntaxException;
 
 public class GameClient {
     private static final HttpClient CLIENT = HttpClient.newHttpClient();
@@ -16,6 +16,23 @@ public class GameClient {
     public void setGameController(GameController controller){
         this.controller = controller;
     }
+    //補助メソッド
+    private HttpRequest buildRequest(String endpoint, String method, String body) throws URISyntaxException {
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+            .uri(new URI(serverUrl + endpoint))
+            .header("Session-ID", sessionId)
+            .header("Content-Type", "text/plain");
+    
+        if ("POST".equalsIgnoreCase(method)) {
+            builder.POST(HttpRequest.BodyPublishers.ofString(body == null ? "" : body)); // nullを空文字に置き換え
+        } else if ("GET".equalsIgnoreCase(method)) {
+            builder.GET();
+        }
+    
+        return builder.build();
+    }
+    
+    
     // セッションIDを取得
     public void initializeSession(String passphrase) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
@@ -23,7 +40,6 @@ public class GameClient {
             .POST(HttpRequest.BodyPublishers.ofString(passphrase))
             .header("Content-Type", "text/plain")
             .build();
-
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
             sessionId = response.body();
@@ -33,13 +49,9 @@ public class GameClient {
             throw new RuntimeException("セッションID取得エラー: " + response.statusCode());
         }
     }
-
+    //playerIdを取得
     public int fetchPlayerId() throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI(serverUrl + "/game/playerId")) // PlayerID取得のエンドポイント
-            .GET()
-            .header("Session-ID", sessionId)
-            .build();
+        HttpRequest request = buildRequest("/game/playerId", "GET", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
             return Integer.parseInt(response.body());
@@ -50,13 +62,7 @@ public class GameClient {
     //自分の情報を送る
     public void sendPlayerInfo(String playerName, int iconNum, int level) throws Exception {
         String message = String.format("%s:%d:%d", playerName, iconNum, level);
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI(serverUrl + "/game/player"))
-            .POST(HttpRequest.BodyPublishers.ofString(message))
-            .header("Session-ID", sessionId)
-            .header("Content-Type", "text/plain")
-            .build();
-    
+        HttpRequest request = buildRequest("/game/player", "POST", message);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
             System.out.println("Player info sent successfully: " + response.body());
@@ -66,12 +72,7 @@ public class GameClient {
     }
     //相手の情報を取り出す
     public String fetchPlayerInfo() throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI(serverUrl + "/game/player"))
-            .GET()
-            .header("Session-ID", sessionId)
-            .build();
-    
+        HttpRequest request = buildRequest("/game/player", "GET", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
             //System.out.println("Player info fetched successfully: " + response.body());
@@ -82,17 +83,10 @@ public class GameClient {
             throw new RuntimeException("Failed to fetch player info: " + response.statusCode());
         }
     }
-    
-    // 準備完了通知
+    // 準備完了通知これいる？
     public void ready() throws Exception {
         System.out.println("準備完了通知送信URL: " + serverUrl + "/game/ready");
-
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI(serverUrl + "/game/ready"))
-            .POST(HttpRequest.BodyPublishers.noBody())
-            .header("Session-ID", sessionId)
-            .build();
-
+        HttpRequest request = buildRequest("/game/ready", "POST", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
             System.out.println("準備完了通知送信結果: " + response.body());
@@ -101,12 +95,7 @@ public class GameClient {
         }
     }
     public boolean isGameStarted() throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI(serverUrl + "/game/ready")) // 準備完了状態を確認するエンドポイント
-            .POST(HttpRequest.BodyPublishers.noBody())
-            .header("Session-ID", sessionId)
-            .build();
-
+        HttpRequest request = buildRequest("/game/ready", "POST", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     
         if (response.statusCode() == 200) {
@@ -119,12 +108,7 @@ public class GameClient {
     }
     // ゲーム状態取得
     public void fetchGameState() throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI(serverUrl + "/game/state"))
-            .GET()
-            .header("Session-ID", sessionId)
-            .build();
-
+        HttpRequest request = buildRequest("/game/state", "GET", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
             System.out.println("ゲーム状態: " + response.body());
@@ -134,26 +118,19 @@ public class GameClient {
             throw new RuntimeException("ゲーム状態取得エラー: " + response.statusCode());
         }
     }
-
-    
-    
-
     // カードプレイ
     public void playCard(int cardInfo,int playerId,int fieldCardId) throws Exception {
         String message = String.format("PLAY_CARD:%d:%d:%d", cardInfo, fieldCardId,playerId); // メッセージに PlayerID を追加
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI(serverUrl + "/game/play"))
-            .POST(HttpRequest.BodyPublishers.ofString(message))
-            .header("Session-ID", sessionId)
-            .header("Content-Type", "text/plain")
-            .build();
-
+        HttpRequest request = buildRequest("/game/play", "POST", message);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println("pぁyCard: " + response.body());
         if (response.statusCode() == 200) {
             System.out.println("カードプレイ成功: " + response.body());
             String responseBody = response.body();
             // レスポンス内容に応じて処理を分岐
-            if (responseBody.startsWith("KOIKOI_WAITING")) {
+            if (responseBody.startsWith("CONTINUE_TURN")){
+                continueYourTurn();
+            }else if (responseBody.startsWith("KOIKOI_WAITING")) {
                 handleKoiKoiSelection(responseBody);
             } else if (responseBody.startsWith("NEXT_TURN")) {
                 handleNextTurn(responseBody);
@@ -166,71 +143,40 @@ public class GameClient {
             throw new RuntimeException("カードプレイエラー: " + response.statusCode());
         }
     }
-    /* */
+    private void continueYourTurn(){
+        //もう一枚処理してって命令を送る。なんでも書いていいよ
+
+    }
+    public void sendNextTurnMessage(String answer)throws Exception {
+        // answer は "KOIKOI" か "NEXTTURN" か "END" のいずれかを送信
+        String message = String.format("%s", answer);
+        HttpRequest request = buildRequest("/game/next", "POST", answer);
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() == 200) {
+            System.out.println("サーバーから受信: " + response.body());
+        } else {
+            throw new RuntimeException("[ERROR] sendNextTurnMessage: " + response.statusCode());
+        }
+    
+    }
+    
     //ここからPlayCardの補助関数
     private void handleKoiKoiSelection(String responseBody) {
         System.out.println("こいこい待機中: " + responseBody);
-    
-        // UIやコンソールでプレイヤーに選択をしてもらう。ここ頼む！！！！！！！！！！！！！！！
-        //例でScanner使ってるけど、int型のメソッドをどっかで作ってウィンドウ表示でボタンとかだしてchoiceに１か０を入れてくれればOK！！！！
-        System.out.println("役が成立しました。「こいこい」しますか？（1: はい, 0: いいえ）");
-        Scanner scanner = new Scanner(System.in);
-        int choice = -1;
-        while (choice != 1 && choice != 0) {
-            System.out.print("選択してください (1 または 0): ");
-            try {
-                choice = Integer.parseInt(scanner.nextLine());
-            } catch (NumberFormatException e) {
-                System.out.println("無効な入力です。");
-            }
-        }
-        //ここまで頼む！！！！！！！！！！！！！！！
-        
-        // サーバーに「こいこい」か「終了」の結果を送信
-        String koiKoiMessage = String.format("KOIKOI_RESPONSE:%d", choice);
-        try {
-            HttpRequest request = HttpRequest.newBuilder()
-                .uri(new URI(serverUrl + "/game/play")) // 同じエンドポイントを利用
-                .POST(HttpRequest.BodyPublishers.ofString(koiKoiMessage))
-                .header("Session-ID", sessionId)
-                .header("Content-Type", "text/plain")
-                .build();
-    
-            HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() == 200) {
-                System.out.println("こいこい選択完了: " + response.body());
-            } else {
-                throw new RuntimeException("こいこい選択エラー: " + response.statusCode());
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("こいこい選択中にエラーが発生しました。");
-        }
-    }
-    private void handleNextTurn(String responseBody) {
-        System.out.println("次のターンに進みます: " + responseBody);
-        //次のターンにいく。勝手に盤面は変わるけど、カットイン演出とか入れるならここで呼び出す。
-    }
-    private void handleGameEnd(String responseBody) {
-        System.out.println("ゲーム終了: " + responseBody);
-    
-        // ゲーム終了時の処理を書く
     }
 
+    private void handleNextTurn(String responseBody) {
+        System.out.println("次のターンに進みます: " + responseBody);
+    }
+
+    private void handleGameEnd(String responseBody) {
+        System.out.println("ゲーム終了: " + responseBody);
+    }
     //PlayCardの補助関数ここまで
 
     public void disconnect() throws Exception {
-        if (sessionId == null || sessionId.isEmpty()) {
-            System.out.println("セッションIDが未設定のため、切断通知をスキップします。");
-            return;
-        }
-
-        HttpRequest request = HttpRequest.newBuilder()
-            .uri(new URI(serverUrl + "/session/terminate"))
-            .POST(HttpRequest.BodyPublishers.noBody())
-            .header("Session-ID", sessionId)
-            .build();
-
+        HttpRequest request = buildRequest("/session/terminate", "POST", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
             System.out.println("切断通知成功: " + response.body());

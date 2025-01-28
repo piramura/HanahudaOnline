@@ -50,6 +50,25 @@ public class Lobby extends JFrame {
             }
         });
         add(exitButton, BorderLayout.EAST);
+        JButton playButton = new JButton("カードプレイ");
+        playButton.addActionListener(e -> {
+            try {
+                gameController.startPlayCardTest();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "カードプレイ中にエラーが発生しました: " + ex.getMessage());
+            }
+        });
+        add(playButton, BorderLayout.NORTH);
+        
+        JButton fetchButton = new JButton("フェッチ");
+        fetchButton.addActionListener(e -> {
+            try {
+                gameController.fetchState();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "カードプレイ中にエラーが発生しました: " + ex.getMessage());
+            }
+        });
+        add(fetchButton,BorderLayout.SOUTH);
         addShutdownHook();
         setVisible(true);
     }
@@ -68,5 +87,6 @@ public class Lobby extends JFrame {
             }
         }));
     }
+    
     
 }

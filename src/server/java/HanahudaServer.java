@@ -41,11 +41,12 @@ public class HanahudaServer {
         gameSessionManager = GameSessionManager.getInstance(clientSessionManager);
         System.out.println("ゲームセッションがリセットされました。次のプレイヤーを待っています...");
     }
+    
 }
+
 
 class PlayCardHandler implements HttpHandler {
     private GameSessionManager gameSessionManager;
-
     public PlayCardHandler(GameSessionManager gameSessionManager) {
         this.gameSessionManager = gameSessionManager;
     }
@@ -56,39 +57,35 @@ class PlayCardHandler implements HttpHandler {
             exchange.sendResponseHeaders(405, -1); // Method Not Allowed
             return;
         }
-        System.out.println("PlayCardHandlerで受信したリクエストメソッド: " + exchange.getRequestMethod());
+        
         String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
-        System.out.println("受信したセッションID: " + sessionId);
         String message = new String(exchange.getRequestBody().readAllBytes());
-        System.out.println("メッセージ: " + message);
-        String response = gameSessionManager.processMessage(sessionId, message);
-        System.out.println("レスポンス: " + response);
+        String response = gameSessionManager.processMessage(sessionId, message);//response作成
+        System.out.println("Response");
+        System.out.println(response);
         exchange.sendResponseHeaders(200, response.getBytes().length);
-        OutputStream os = exchange.getResponseBody();
-        os.write(response.getBytes());
-        os.close();
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
     }
 }
 class GameStateHandler implements HttpHandler {
     private GameSessionManager gameSessionManager;
-
     public GameStateHandler(GameSessionManager gameSessionManager) {
         this.gameSessionManager = gameSessionManager;
     }
-
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         if (!"GET".equals(exchange.getRequestMethod())) {
             exchange.sendResponseHeaders(405, -1); // Method Not Allowed
             return;
         }
-
         String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
         String response = gameSessionManager.getGameState(sessionId);
         exchange.sendResponseHeaders(200, response.getBytes().length);
-        OutputStream os = exchange.getResponseBody();
-        os.write(response.getBytes());
-        os.close();
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
     }
 }
 class ReadyHandler implements HttpHandler {
@@ -104,14 +101,12 @@ class ReadyHandler implements HttpHandler {
             exchange.sendResponseHeaders(405, -1); // Method Not Allowed
             return;
         }
-
         String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
         String response = gameSessionManager.setClientReady(sessionId);
-
         exchange.sendResponseHeaders(200, response.getBytes().length);
-        OutputStream os = exchange.getResponseBody();
-        os.write(response.getBytes());
-        os.close();
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
     }
 }
 
@@ -249,29 +244,18 @@ class NextTurnHandler implements HttpHandler {
         // リクエストボディを解析
         String body = new String(exchange.getRequestBody().readAllBytes());
         System.out.println("[DEBUG] 受信したリクエスト: " + body);
-        
-        if(body == "KOIKOI" || body == "NEXTTURN"){
-            //NEXTTURN
+        if ("KOIKOI".equals(body) || "NEXTTURN".equals(body)) {
             gameSessionManager.nextTurn();
-            //return "NEXT";
-            return;
-        }else if(body == " END"){
-            //KOIKOI = false
-            //ENDGAME
+        } else if ("END".equals(body)) {
             gameSessionManager.endGame();
-            //return "END";
-            return;
-        }else{
-            //ERROR
+        } else {
             String response = "ERROR: 無効なリクエスト形式";
             exchange.sendResponseHeaders(400, response.getBytes().length);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
             }
             return;
-        }
- 
-        
+        }        
     }
 }
 class PlayerHandler implements HttpHandler {

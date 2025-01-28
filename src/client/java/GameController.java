@@ -346,8 +346,9 @@ public class GameController {
                             System.out.println("ゲームが開始されました!");
                             //System.out.println("遅延後に fetchPlayerInfo を呼び出します...");
                             gameClient.fetchPlayerInfo(); // 遅延後に呼び出し
-                            pollGameState(); // 状態取得を開始
-                            startPlayCardTest();//テスト用コード
+                            //pollGameState(); // 状態取得を開始
+                            //startPlayCardTest();//テスト用コード
+                            //gameClient.fetchGameState();
                         } else {
                             System.out.println("ゲームが開始されるのを待っています...");
                         }
@@ -362,16 +363,29 @@ public class GameController {
             System.err.println("セッションの初期化に失敗しました: " + e.getMessage());
         }
     }
-    
-    private void startPlayCardTest() {
+    public void fetchState(){
+        try {
+            gameClient.fetchGameState();
+        }catch(Exception e){
+            System.err.println("fetchStateにエラーが発生しました: " + e.getMessage());
+                e.printStackTrace();
+        }
+        
+    }
+    public void startPlayCardTest() {
             try {
                 if (gameClient == null) {
                     System.out.println("ゲームコントローラーまたはクライアントが未初期化です。");
                     return;
                 }
+                System.out.println("プレイヤーID"+playerId);
+                if((currentTurn % 2) == playerId%2 ){
+                    System.out.println("あなたのターンではありません"+currentTurn);
+                    return;
+                }
 
-                // サーバーからゲーム状態を取得
-                gameClient.fetchGameState();
+                // // サーバーからゲーム状態を取得
+                // gameClient.fetchGameState();
 
                 // 手札と場札を取得
                 List<Integer> hand = player1Hands;
@@ -417,18 +431,26 @@ public class GameController {
             System.err.println("カード送信エラー: " + e.getMessage());
         }
     }
-
-    // ゲーム終了
-    private void quitGame() {
-        System.out.println("ゲームを終了します。");
-        System.exit(0);
-    }
-    
-    // クライアントで通知を処理するメソッド
-    public void handleDisconnectionNotification(String message) {
-        if (message.startsWith("DISCONNECTED_PLAYER:")) {
-            int disconnectedPlayer = Integer.parseInt(message.split(":")[1].trim());
-            System.out.println("プレイヤー " + disconnectedPlayer + " が切断されました。");
+    public void sendMessage(){
+        try {
+            gameClient.sendNextTurnMessage("Test");
+        } catch (Exception e) {
+            System.err.println("メッセージ送信エラー: " + e.getMessage());
         }
+        
     }
+
+    // // ゲーム終了
+    // private void quitGame() {
+    //     System.out.println("ゲームを終了します。");
+    //     System.exit(0);
+    // }
+    
+    // // クライアントで通知を処理するメソッド
+    // public void handleDisconnectionNotification(String message) {
+    //     if (message.startsWith("DISCONNECTED_PLAYER:")) {
+    //         int disconnectedPlayer = Integer.parseInt(message.split(":")[1].trim());
+    //         System.out.println("プレイヤー " + disconnectedPlayer + " が切断されました。");
+    //     }
+    // }
 }
