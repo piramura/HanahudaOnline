@@ -72,6 +72,8 @@ public class GameSessionManager {
         gameStarted = true;
         // ゲーム開始処理
         gamelogic.resetGame(); // ゲームロジックに委譲
+        //先行後攻をランダムで決める
+        //どうしよ。
         getGameState(sessionId);
         
         System.out.println("全プレイヤーが準備完了。ゲームを開始します！");
@@ -92,17 +94,6 @@ public class GameSessionManager {
         Integer playerNumber = clientSessionManager.getPlayerIndex(sessionId);
         if (playerNumber == null) {
             return "ERROR: セッションが見つかりません";
-        }
-        //こいこい処理
-        if (message.startsWith("KOIKOI_RESPONSE")) {
-            //これが送られてきた時は終了ということにする。
-            boolean isKoiKoi = "1".equals(message.split(":")[1]);
-            if(isKoiKoi){
-                gamelogic.continueGame();
-            }else{
-                return gamelogic.determineWinner();
-            }
-            
         }
 
         // PLAY_CARD コマンドの処理
@@ -204,6 +195,7 @@ public class GameSessionManager {
         gameStarted = false;
         System.out.println("すべてのゲーム状態がリセットされました。");
     }
+    //ゲーム進行
     public void nextTurn(){
         gamelogic.nextTurn();
     }

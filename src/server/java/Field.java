@@ -21,7 +21,7 @@ public class Field {
     public ArrayList<Card> getCards() {
         return cards;
     }
-    // id を使って特定のカードを取得
+    // id を使って特定のカードを取得これいる？？
     public Card getCardById(int id) {
         for (Card card : cards) {
             if (card.getId() == id) {
@@ -53,33 +53,9 @@ public class Field {
         }
         return "場札: " + rolesString;
     }
-    public void processPlayedCard(Player player, Card playedCard,int fieldCardId) {
-        // fieldCardId からカードを取得
-        if(fieldCardId == -1){
-            // 同じ月のカードがなければ場に追加
-            this.addCard(playedCard);
-            System.out.println("場に残したカード: " + playedCard);
-        }else{
-            Card fieldCard = this.getCardById(fieldCardId);
-            if (!isThreeCards(fieldCard)) {
-                // 3枚未満の場合、普通にそのカードを取る
-                player.captureCard(fieldCard);
-                player.captureCard(playedCard);
+        
     
-                System.out.println("場札から取ったカード: " + fieldCard);
-            } else {
-                // 3枚同じ月のカードがある場合、すべて取る
-                ArrayList<Card> takenCards = takeCardsByMonth(fieldCard.getMonth());
-                for (Card card : takenCards) {
-                    player.captureCard(card);
-                }
-                player.captureCard(playedCard);
-
-                System.out.println("場札から取ったカード(3枚以上): " + takenCards);
-            }
-        }
-    }
-    private boolean isThreeCards(Card card){
+    public boolean isThreeCards(Card card){
         int count = 0;
         for (Card c : cards) {
             if (c.getMonth() == card.getMonth()) {
@@ -88,30 +64,6 @@ public class Field {
         }
         return count == 3; // 3枚の場合に true を返す
     }
-    //後からここも選べるようにする？？
-    public void processDrawnCard(Player player, Card drawnCard) {
-        // 山札から引いたカードを場に出して処理
-        ArrayList<Card> drawnTakenCards = this.takeCardsByMonth(drawnCard.getMonth());
-        if (!drawnTakenCards.isEmpty()) {
-            Card drawnTakenCard = drawnTakenCards.remove(0);
-            player.captureCard(drawnTakenCard);
-            player.captureCard(drawnCard);
-
-            // 残りのカードを場に戻す
-            for (Card remainingCard : drawnTakenCards) {
-                this.addCard(remainingCard);
-            }
-
-            System.out.println("山札から引いたカードで場札を取ったカード: " + drawnTakenCard);
-        } else {
-            // 場に追加
-            this.addCard(drawnCard);
-            System.out.println("山札から引いたカードを場に残した: " + drawnCard);
-        }
-    }
-
-    //場から引いた時どっちを選ぶかも、プレイヤーに委ねる？これは後で？？？？
-    //
     public ArrayList<Card> takeCardsByMonth(Card.Month month) {
         ArrayList<Card> takenCards = new ArrayList<>();
         

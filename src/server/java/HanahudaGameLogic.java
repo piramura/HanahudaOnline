@@ -5,6 +5,9 @@ public class HanahudaGameLogic {
     private Game game;
     private int currentPlayerIndex;
     private int playCount = 0; // 現在のターンでのプレイ回数
+    public Game getGame(){
+        return game;
+    }
 
     public void  resetGame() {
         Deck deck = new Deck();
@@ -25,9 +28,7 @@ public class HanahudaGameLogic {
             }
         }
     }
-    public Game getGame(){
-        return game;
-    }
+    
 
     // 場のカードをセットアップ
     private void setupField() {
@@ -45,6 +46,7 @@ public class HanahudaGameLogic {
             game.getDeck().shuffle();
         }
     }
+    //setupFieldの補助関数
     private boolean hasFourSameMonthCards(List<Card> cards) {
         int[] monthCounts = new int[12]; // 月ごとのカウント用配列（0～11のインデックス）
     
@@ -58,44 +60,11 @@ public class HanahudaGameLogic {
     
         return false; // 問題なし
     }
-    /*
-    // プレイヤーのアクション（カードを出すなど）を処理し、ゲームの進行を制御。
-    // 入力検証、カードのプレイ、ルールの適用を行う。
-    public String processPlayerAction(int playerIndex, String action) {
-        if (!isCurrentPlayer(playerIndex)) {
-            return "エラー: あなたのターンではありません。";
-        }
-        String[] parts = validateAction(action);
-        if (parts == null) {
-            return "エラー: 不正なコマンド形式です。";
-        }
-        String result = "エラー：けっか判定できません。";
-        try {
-            //インデックスが不正ならばここでエラー出る。
-            int cardIndex = Integer.parseInt(parts[1]);//いまは１～４８のすうじだからこいつがどこにあるかさがしてそれが手札なら値を返す。
-            result = handleCardPlay(playerIndex, cardIndex);
-        } catch (IllegalArgumentException e) {
-            return "エラー: " + e.getMessage();
-        }
-        // ➡️ 役判定を追加
-        RoleResult roleResult = RoleChecker.checkRules(game.getPlayers().get(playerIndex));
-        System.out.println(roleResult);
-        if (action.startsWith("DECLARE_END")) {
-            game.getPlayers().get(playerIndex).declareEnd();
-            return "プレイヤー " + (playerIndex + 1) + " がゲームを終了しました。";
-        }
-        
-        if (isGameFinished()) {
-            return determineWinner();
-            //ゲーム終了
-        }
-
-        return result + "\n次のターンはプレイヤー " + (currentPlayerIndex + 1) + " です。";
-    }
-    */
+    
+    //PLAY_CARDで呼ばれる関数。
     public String processPlayerAction(int playerIndex, int handCardId, int fieldCardId) {
     
-            String playResult = handleCardPlay(playerIndex, handCardId, fieldCardId);
+            String playResult = handleCardPlay(playerIndex, handCardId, fieldCardId);//内部処理は委託する。
             playCount++;
             if (playCount >= 2) {
                 // 2回プレイしたら返信を作成
@@ -111,60 +80,46 @@ public class HanahudaGameLogic {
                         "役: " + roleResult.getAchievedRoles() + "\n" +
                         "得点: " + roleResult.getTotalScore();
                 }
-                // // ゲーム終了判定は別の処理で
-                // if (isGameFinished()) {
-                //     return "GAME_END: ゲーム終了！勝者: " + determineWinner();
-                // }
 
-                // 次のターンに進む
-                //nextTurn();
                 return "NEXT_TURN: プレイヤー " + ((currentPlayerIndex + 1)%2) + " のターンです。\n" + playResult;
             }else{
                 return "CONTINUE_TURN: プレイヤー " + (playerIndex + 1) + " のターンが継続中です。\n" + playResult;
             }
     }
-    
-    private String askKoiKoi(int playerIndex, RoleResult roleResult) {
-        Player player = game.getPlayers().get(playerIndex);
-    
-        // プレイヤーに「こいこい」を選択させる
-        System.out.println("プレイヤー " + (playerIndex + 1) + " は次の役を達成しました: " + roleResult.getAchievedRoles());
-        System.out.println("合計得点: " + roleResult.getTotalScore() + "点");
-    
-        // 「こいこい」するか確認（仮の処理: 本来はユーザー入力を待つ）
-        boolean koiKoi = Math.random() < 0.5; // 50%で「こいこい」選択（デモ用）
-    
-        if (koiKoi) {
-            System.out.println("プレイヤー " + (playerIndex + 1) + " は「こいこい」を選択しました！");
-            return "プレイヤー " + (playerIndex + 1) + " が「こいこい」を選択しました。次のターンに進みます。";
-        } else {
-            System.out.println("プレイヤー " + (playerIndex + 1) + " は「こいこい」を選択しませんでした。ゲーム終了です。");
-            game.getPlayers().get(playerIndex).declareEnd();
-            return determineWinner();
-        }
-    }
-    
+    //processPlayerActionの補助関数
     public String handleCardPlay(int playerIndex, int cardId,int fieldcard) {//プレイヤーの指定したカードを処理し、ゲームの進行を行う。
         Player player = game.getPlayers().get(playerIndex);
         // 手札内のインデックスを取得
         int handIndex = findCardIndexInHand(player, cardId);
         System.out.println("DEBUG: カードID " + cardId + " は手札のインデックス " + handIndex + " にあります。");
-
         // 手札からカードをプレイ
         Card playedCard = player.playCard(handIndex);
-        //playするだけで実質的には与えられたfieldcardを使うように変更
-        game.getField().processPlayedCard(player, playedCard,fieldcard); // Field に委譲
-        Card drawnCard = game.getDeck().draw();
-        if (drawnCard != null) {
-            game.getField().processDrawnCard(player,drawnCard); // Field に委譲
+        if(fieldcard == -1){
+            game.getField().addCard(playedCard);
+        }else{
+            //三枚のカードがないなら
+            Field f = game.getField();
+            Card fieldCard = game.getField().takeCardById(fieldcard);
+            if(!f.isThreeCards(fieldCard)){
+                player.captureCard(fieldCard);
+                player.captureCard(playedCard);
+            }else{
+                ArrayList<Card> takenCards = f.takeCardsByMonth(fieldCard.getMonth());
+                for (Card card : takenCards) {
+                    player.captureCard(card);
+                }
+                player.captureCard(playedCard);
+            }
         }
+        if(playCount == 0){
+            Card drawnCard = game.getDeck().draw();
+            player.addCardToHand(drawnCard);
+            return "山から引いたカードを手札に追加したのでそれを元に場のカード選べ";
+        }else{
+            return "相手のターンへ";
+        }
+    }
 
-        nextTurn();
-        return "プレイヤー " + (playerIndex + 1) + " がカードをプレイしました。\n";
-    }
-    public void continueGame(){
-        //ゲーム続けるから空の処理
-    }
     public String determineWinner() {
         Player player1 = game.getPlayers().get(0);
         Player player2 = game.getPlayers().get(1);
