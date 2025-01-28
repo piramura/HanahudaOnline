@@ -8,7 +8,7 @@ public class Deck{
 		//山の初期化。
         cards = new ArrayList<>();
          // 各月ごとにカードを追加
-         int cardId = 1;
+         int cardId = 0;
          //これがハードコーディングってやつか。
         //1月
         Card card0 = new Card(cardId++,Card.Month.JANUARY, Card.Point.HIKARI);

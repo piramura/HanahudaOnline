@@ -8,7 +8,7 @@ public class Card{
 	private boolean isInPlay;// カードが場にあるかどうか
     private int id; // 一意のID
     private Location location; // 現在位置を記憶する
-
+    
 	// コンストラクタ
     public Card(int id,Month month, Point point) {
         this.month = month;

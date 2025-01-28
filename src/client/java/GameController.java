@@ -19,6 +19,7 @@ public class GameController {
     private int playerId; // 自分のプレイヤーIDを管理
     private int elapsedTime = 0;
     private boolean isActive = false;
+    private int playCount;
 
     public List<Integer> getField() {
         return field;
@@ -346,6 +347,7 @@ public class GameController {
                             System.out.println("ゲームが開始されました!");
                             //System.out.println("遅延後に fetchPlayerInfo を呼び出します...");
                             gameClient.fetchPlayerInfo(); // 遅延後に呼び出し
+                            playCount=0;
                             //pollGameState(); // 状態取得を開始
                             //startPlayCardTest();//テスト用コード
                             //gameClient.fetchGameState();
@@ -374,35 +376,46 @@ public class GameController {
     }
     public void startPlayCardTest() {
             try {
+                playCount++;
                 if (gameClient == null) {
                     System.out.println("ゲームコントローラーまたはクライアントが未初期化です。");
                     return;
                 }
                 System.out.println("プレイヤーID"+playerId);
-                if((currentTurn % 2) == playerId%2 ){
+                if((currentTurn % 2) == playerId % 2 ){
                     System.out.println("あなたのターンではありません"+currentTurn);
                     return;
+                }
+                if(playCount >= 2){
+                    System.out.println("あなたのターンではありません"+currentTurn);
+                }
+                // 手札と場札を取得
+                List<Integer> hand = player1Hands;
+                List<Integer> fields = field;
+                int selectedHandCardId = -1;
+                if(playCount == 1){
+                    selectedHandCardId = hand.get(hand.size()-1);
+                }else{
+                    // 手札の0番目のカードを選択
+                    selectedHandCardId = hand.get(0);
                 }
 
                 // // サーバーからゲーム状態を取得
                 // gameClient.fetchGameState();
 
-                // 手札と場札を取得
-                List<Integer> hand = player1Hands;
-                List<Integer> fields = field;
+                
 
                 if (hand.isEmpty()) {
                     System.out.println("手札が空です。テストを終了します。");
                     return;
                 }
 
-                // 手札の0番目のカードを選択
-                int selectedHandCardId = hand.get(0);
+                
 
                 // 場札から同じカードを探す
                 int selectedFieldCardId = -1; // デフォルトは -1
                 for (int fieldCardId : fields) {
-                    if ((fieldCardId+3)/4 == (selectedHandCardId+3)/4) {
+                    if (fieldCardId/4 == selectedHandCardId/4) {
                         selectedFieldCardId = fieldCardId;
                         break;
                     }

@@ -123,7 +123,7 @@ public class GameClient {
         String message = String.format("PLAY_CARD:%d:%d:%d", cardInfo, fieldCardId,playerId); // メッセージに PlayerID を追加
         HttpRequest request = buildRequest("/game/play", "POST", message);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        System.out.println("pぁyCard: " + response.body());
+        System.out.println("playCard: " + response.body());
         if (response.statusCode() == 200) {
             System.out.println("カードプレイ成功: " + response.body());
             String responseBody = response.body();

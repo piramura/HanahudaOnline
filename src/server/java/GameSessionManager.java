@@ -140,26 +140,23 @@ public class GameSessionManager {
         StringBuilder gameState = new StringBuilder();
         gameState.append("Field: ");
         for (Card card : game.getField().getCards()) {
-            gameState.append(card.getId() -1).append(",");
+            gameState.append(card.getId()).append(",");
         }
         gameState.append("\n");
 
         for (int i = 0; i < game.getPlayers().size(); i++) {
             gameState.append("PlayerHand").append(i + 1).append(" : ");
                 for (Card card : game.getPlayers().get(i).getHand()) {
-                    gameState.append(card.getId() -1 ).append(",");
+                    gameState.append(card.getId() ).append(",");
                 }
             gameState.append("\n");
             gameState.append("PlayerCaptures").append(i + 1).append(" : ");
                 for (Card card : game.getPlayers().get(i).getCaptures()) {
-                    gameState.append(card.getId() -1 ).append(",");
+                    gameState.append(card.getId()).append(",");
                 }
             gameState.append("\n");
         }
-        gameState.append("現在のターン: ").append(game.getNowTurn()).append("\n");
-        // 「こいこい」の状態を追加
-        gameState.append("KoiKoiStates: ");
-        gameState.append(game.getAllKoiKoiStates());
+        gameState.append("現在のターン: ").append(game.getCurrentPlayerIndex()).append("\n");
         gameState.append("\n");
         
         System.out.println("DEBUG ゲーム状態: " + gameState);

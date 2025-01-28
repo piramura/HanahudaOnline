@@ -9,122 +9,92 @@ public class HanahudaGameLogic {
         return game;
     }
 
-    public void  resetGame() {
+    public void resetGame() {
         Deck deck = new Deck();
-        deck.shuffle();
-        this.game = new Game(deck,this);
-        setupPlayers();//プレイヤーに初期の手札を配る処理を実行する。
-        setupField();//山札から場に8枚のカードを配置する処理を行う。
-        this.currentPlayerIndex = 0;
-        this.playCount = 0;
+        this.game = new Game(deck);
+        game.initializeGame(this);
         System.out.println("ゲーム開始！ 配札完了！");
     }
     private boolean isCurrentPlayer(int playerIndex) {
         return playerIndex == currentPlayerIndex;
     }
     
-    // プレイヤーをセットアップ
-    private void setupPlayers() {
-        for (int i = 0; i < 2; i++) {
-            Player player = new Player();
-            game.addPlayer(player);
-            for (int j = 0; j < 8; j++) {
-                player.addCardToHand(game.getDeck().draw());
-            }
-        }
-    }
-    // 場のカードをセットアップ
-    private void setupField() {
-        while (true) {
-            game.getField().clear();
-            for (int i = 0; i < 8; i++) {
-                game.getField().addCard(game.getDeck().draw());
-            }
-            //同じ月のカードが4枚以上あるかチェック
-            if (!hasFourSameMonthCards(game.getField().getCards())) {
-                break; // 問題がなければループを抜ける
-            }
-            // 問題がある場合はデッキを再シャッフル
-            System.out.println("フィールドに同じ月のカードが4枚以上あります。再セットアップを行います。");
-            game.getDeck().shuffle();
-        }
-    }
-    //setupFieldの補助関数
-    private boolean hasFourSameMonthCards(List<Card> cards) {
-        int[] monthCounts = new int[12]; // 月ごとのカウント用配列（0～11のインデックス）
     
-        for (Card card : cards) {
-            int month = (card.getId() - 1) / 4; // IDを4で割り、0～11の月を取得
-            monthCounts[month]++;
-            if (monthCounts[month] >= 4) {
-                return true;
-            }
-        }
-        return false; // 問題なし
-    }
 
     //PLAY_CARDで呼ばれる関数。
     public String processPlayerAction(int playerIndex, int handCardId, int fieldCardId) {
-        System.out.println("HanahudaLogicの中でprocessPlayerActionを処理中");
+        if (playerIndex != game.getCurrentPlayerIndex()) {
+            return "ERROR: 現在のプレイヤーではありません。";
+        }
+        //System.out.println("HanahudaLogicの中でprocessPlayerActionを処理中");
         String playResult = handleCardPlay(playerIndex, handCardId, fieldCardId);//内部処理は委託する。
-        playCount++;
-        System.out.println(playCount);
-        if (playCount >= 2) {
-            // 2回プレイしたら返信を作成
-            // 役判定
+        game.incrementPlayCount();
+
+        if (game.getPlayCount() >= 2) {
             RoleResult roleResult = RoleChecker.checkRules(game.getPlayers().get(playerIndex));
             if (!roleResult.getAchievedRoles().isEmpty()) {
-                System.out.println("役が成立しました: " + roleResult.getAchievedRoles());
-
-                // 「こいこい」待機状態にする
-                game.setKoiKoi(playerIndex, true); // プレイヤーを「こいこい中」に設定
-
+                //game.getPlayers().get(playerIndex).addScore(roleResult.getTotalScore());
                 return "KOIKOI_WAITING: 役が成立しました。「こいこい」を選択してください。\n" +
-                    "役: " + roleResult.getAchievedRoles() + "\n" +
-                    "得点: " + roleResult.getTotalScore();
+                       "役: " + roleResult.getAchievedRoles() + "\n" +
+                       "得点: " + roleResult.getTotalScore();
             }
+            game.resetPlayCount();
+            game.setCurrentPlayerIndex((game.getCurrentPlayerIndex() + 1) % 2);
+            return "NEXT_TURN: プレイヤー " + game.getCurrentPlayerIndex() + " のターンです。\n" + playResult;
 
-            return "NEXT_TURN: プレイヤー " + ((currentPlayerIndex + 1)%2) + " のターンです。\n" + playResult;
-        }else{
-            System.out.println("CONTINUE_TURN: プレイヤー " + (playerIndex + 1) + " のターンが継続中です。\n" + playResult);
-            return "CONTINUE_TURN: プレイヤー " + (playerIndex + 1) + " のターンが継続中です。\n" + playResult;
         }
+        System.out.println("CONTINUE_TURN: プレイヤー " + playerIndex + " のターンが継続中です。\n" + playResult);
+        return "CONTINUE_TURN: プレイヤー " + playerIndex + " のターンが継続中です。\n" + playResult;
     }
     //processPlayerActionの補助関数
     public String handleCardPlay(int playerIndex, int cardId,int fieldcard) {//プレイヤーの指定したカードを処理し、ゲームの進行を行う。
         System.out.println("HanahudaLogicの中でhandleCardPlayを処理中");
+        // デッキの中身を出力
+        game.printDeckContents();
+        // プレイヤーの手札を確認
+        game.printPlayerHands();
         Player player = game.getPlayers().get(playerIndex);
-        System.out.println("Player " + playerIndex +" の処理ちゅう");
-        if (!isCurrentPlayer(playerIndex)) {
-            return "ERROR: 現在のプレイヤーではありません。";
-        }
-        int handIndex = findCardIndexInHand(game.getPlayers().get(playerIndex), cardId);
-        Card playedCard = game.getPlayers().get(playerIndex).playCard(handIndex);
-
+        int handIndex = findCardIndexInHand(player, cardId);
+        Card playedCard = player.playCard(handIndex);
         if(fieldcard == -1){
             game.getField().addCard(playedCard);
+            System.out.println("ばにカードをおきます");
         }else{
-            //三枚のカードがないなら
-            Field f = game.getField();
+            Field field = game.getField();
             Card fieldCard = game.getField().takeCardById(fieldcard);
-            if(!f.isThreeCards(fieldCard)){
+            if (!field.isThreeCards(fieldCard)) {
                 player.captureCard(fieldCard);
                 player.captureCard(playedCard);
-            }else{
-                ArrayList<Card> takenCards = f.takeCardsByMonth(fieldCard.getMonth());
+            } else {
+                List<Card> takenCards = field.takeCardsByMonth(fieldCard.getMonth());
                 for (Card card : takenCards) {
                     player.captureCard(card);
                 }
                 player.captureCard(playedCard);
             }
         }
-        if(playCount == 0){
+        if (game.getPlayCount() == 0) {
             Card drawnCard = game.getDeck().draw();
             player.addCardToHand(drawnCard);
+            System.out.println("1回目のプレイ");
+            // デッキの中身を出力
+            game.printDeckContents();
+            // プレイヤーの手札を確認
+            game.printPlayerHands();
             return "山から引いたカードを手札に追加したのでそれを元に場のカード選べ";
-        }else{
+        } else {
             return "相手のターンへ";
         }
+    }
+    private int findCardIndexInHand(Player player, int cardId) {
+        List<Card> hand = player.getHand();
+        for (int i = 0; i < hand.size(); i++) {
+            System.out.println("DEBUG: hand.get(i).getId() " + hand.get(i).getId() + " と " + cardId);
+            if (hand.get(i).getId() == cardId) {
+                return i;
+            }
+        }
+        throw new IllegalArgumentException("指定されたカードIDが手札にありません: " + cardId);
     }
 
     public String determineWinner() {
@@ -152,33 +122,12 @@ public class HanahudaGameLogic {
         }
         return result;
     }
-
-    private int findCardIndexInHand(Player player, int cardId) {
-        ArrayList<Card> hand = player.getHand();
-        if (hand == null || hand.isEmpty()) {
-            throw new IllegalStateException("プレイヤーの手札が空です。");
-        }
-    
-        for (int i = 0; i < hand.size(); i++) {
-            System.out.println("DEBUG: hand.get(i).getId() " + hand.get(i).getId() + " と " + cardId);
-            if (hand.get(i).getId() == cardId) {
-                return i;
-            }
-        }
-        throw new IllegalArgumentException("指定されたカードIDが手札にありません: " + cardId);
-    }
     
     //これらはパブリックで管理される。
     public void nextTurn() {
-        if (!isGameFinished()) {
-            playCount = 0; // プレイ回数をリセット
-            currentPlayerIndex = (currentPlayerIndex + 1) % 2; // プレイヤーを切り替え
-            game.setNowTurn(currentPlayerIndex);
-            System.out.println("次のターンへ。現在のプレイヤー: " + currentPlayerIndex);
-        } else {
-            endGame();
-        }
+        game.nextTurn();
     }
+    
     
     public void endGame(){
         //ゲーム終了処理
