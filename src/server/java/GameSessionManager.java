@@ -93,25 +93,46 @@ public class GameSessionManager {
         if (playerNumber == null) {
             return "ERROR: セッションが見つかりません";
         }
+        //こいこい処理
+        if (message.startsWith("KOIKOI_RESPONSE")) {
+            //これが送られてきた時は終了ということにする。
+            boolean isKoiKoi = "1".equals(message.split(":")[1]);
+            if(isKoiKoi){
+                gamelogic.continueGame();
+            }else{
+                return gamelogic.determineWinner();
+            }
+            
+        }
 
+        // PLAY_CARD コマンドの処理
         if (message.startsWith("PLAY_CARD")) {
             String[] parts = message.split(":");
-        if (parts.length != 3) {
-            return "ERROR: 無効なメッセージ形式";
+            if (parts.length != 4) { // フォーマット: PLAY_CARD:<手札のカードID>:<場のカードID>:<プレイヤーID>
+                return "ERROR: 無効なメッセージ形式";
+            }
+
+            int cardInfo = Integer.parseInt(parts[1]); // 手札のカードID
+            int fieldCardInfo = Integer.parseInt(parts[2]); // 場のカードID
+            int playerId = Integer.parseInt(parts[3]); // プレイヤーID
+
+            // プレイヤーIDを検証（セッションに対応しているか確認）
+            if (playerId != playerNumber) {
+                return "ERROR: プレイヤーIDが一致しません";
+            }
+            // ゲームロジックにカード情報を渡す
+            return gamelogic.processPlayerAction(playerId - 1, cardInfo,fieldCardInfo);
         }
-
-        String cardInfo = parts[1];
-        int playerId = Integer.parseInt(parts[2]);
-
-        // プレイヤーIDを検証（セッションに対応しているか確認）
-        if (playerId != playerNumber) {
-            return "ERROR: プレイヤーIDが一致しません";
-        }
-
-        return gamelogic.processPlayerAction(playerId - 1, "PLAY_CARD:" + cardInfo);
-        }
-
         return "ERROR: 未知のコマンド";
+    }
+    public String handleKoiKoiResponse(int playerIndex, boolean isKoiKoi) {
+        if (isKoiKoi) {
+            System.out.println("プレイヤー " + (playerIndex + 1) + " が「こいこい」を選択しました。");
+            return "NEXT_TURN: 「こいこい」を選択しました。次のターンに進みます。";
+        } else {
+            System.out.println("プレイヤー " + (playerIndex + 1) + " がゲームを終了しました。");
+            return "GAME_END: ゲーム終了！勝者: " + gamelogic.determineWinner();
+        }
     }
     public synchronized String getGameState(String sessionId) {
         Game game = gamelogic.getGame();
@@ -127,24 +148,28 @@ public class GameSessionManager {
         StringBuilder gameState = new StringBuilder();
         gameState.append("Field: ");
         for (Card card : game.getField().getCards()) {
-            gameState.append(card.getId()).append(",");
+            gameState.append(card.getId() -1).append(",");
         }
         gameState.append("\n");
 
         for (int i = 0; i < game.getPlayers().size(); i++) {
             gameState.append("PlayerHand").append(i + 1).append(" : ");
                 for (Card card : game.getPlayers().get(i).getHand()) {
-                    gameState.append(card.getId()).append(",");
+                    gameState.append(card.getId() -1 ).append(",");
                 }
             gameState.append("\n");
             gameState.append("PlayerCaptures").append(i + 1).append(" : ");
                 for (Card card : game.getPlayers().get(i).getCaptures()) {
-                    gameState.append(card.getId()).append(",");
+                    gameState.append(card.getId() -1 ).append(",");
                 }
             gameState.append("\n");
         }
         gameState.append("現在のターン: ").append(game.getNowTurn()).append("\n");
-
+        // 「こいこい」の状態を追加
+        gameState.append("KoiKoiStates: ");
+        gameState.append(game.getAllKoiKoiStates());
+        gameState.append("\n");
+        
         System.out.println("DEBUG ゲーム状態: " + gameState);
         return gameState.toString();
     }
@@ -178,5 +203,11 @@ public class GameSessionManager {
         clientReadyStates.clear();
         gameStarted = false;
         System.out.println("すべてのゲーム状態がリセットされました。");
+    }
+    public void nextTurn(){
+        gamelogic.nextTurn();
+    }
+    public void endGame(){
+        gamelogic.endGame();
     }
 }

@@ -2,6 +2,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
+import java.util.Scanner;
 
 public class GameClient {
     private static final HttpClient CLIENT = HttpClient.newHttpClient();
@@ -32,6 +33,7 @@ public class GameClient {
             throw new RuntimeException("セッションID取得エラー: " + response.statusCode());
         }
     }
+
     public int fetchPlayerId() throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(new URI(serverUrl + "/game/playerId")) // PlayerID取得のエンドポイント
@@ -72,7 +74,9 @@ public class GameClient {
     
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
-            System.out.println("Player info fetched successfully: " + response.body());
+            //System.out.println("Player info fetched successfully: " + response.body());
+            //
+            controller.fetchAndSetPlayerInfo(response.body());
             return response.body();
         } else {
             throw new RuntimeException("Failed to fetch player info: " + response.statusCode());
@@ -130,13 +134,13 @@ public class GameClient {
             throw new RuntimeException("ゲーム状態取得エラー: " + response.statusCode());
         }
     }
-    
+
     
     
 
     // カードプレイ
-    public void playCard(int cardInfo,int playerId) throws Exception {
-        String message = String.format("PLAY_CARD:%d:%d", cardInfo, playerId); // メッセージに PlayerID を追加
+    public void playCard(int cardInfo,int playerId,int fieldCardId) throws Exception {
+        String message = String.format("PLAY_CARD:%d:%d:%d", cardInfo, fieldCardId,playerId); // メッセージに PlayerID を追加
         HttpRequest request = HttpRequest.newBuilder()
             .uri(new URI(serverUrl + "/game/play"))
             .POST(HttpRequest.BodyPublishers.ofString(message))
@@ -147,10 +151,74 @@ public class GameClient {
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
             System.out.println("カードプレイ成功: " + response.body());
+            String responseBody = response.body();
+            // レスポンス内容に応じて処理を分岐
+            if (responseBody.startsWith("KOIKOI_WAITING")) {
+                handleKoiKoiSelection(responseBody);
+            } else if (responseBody.startsWith("NEXT_TURN")) {
+                handleNextTurn(responseBody);
+            } else if (responseBody.startsWith("GAME_END")) {
+                handleGameEnd(responseBody);
+            } else {
+                throw new RuntimeException("未知のレスポンス形式: " + responseBody);
+            }
         } else {
             throw new RuntimeException("カードプレイエラー: " + response.statusCode());
         }
     }
+    /* */
+    //ここからPlayCardの補助関数
+    private void handleKoiKoiSelection(String responseBody) {
+        System.out.println("こいこい待機中: " + responseBody);
+    
+        // UIやコンソールでプレイヤーに選択をしてもらう。ここ頼む！！！！！！！！！！！！！！！
+        //例でScanner使ってるけど、int型のメソッドをどっかで作ってウィンドウ表示でボタンとかだしてchoiceに１か０を入れてくれればOK！！！！
+        System.out.println("役が成立しました。「こいこい」しますか？（1: はい, 0: いいえ）");
+        Scanner scanner = new Scanner(System.in);
+        int choice = -1;
+        while (choice != 1 && choice != 0) {
+            System.out.print("選択してください (1 または 0): ");
+            try {
+                choice = Integer.parseInt(scanner.nextLine());
+            } catch (NumberFormatException e) {
+                System.out.println("無効な入力です。");
+            }
+        }
+        //ここまで頼む！！！！！！！！！！！！！！！
+        
+        // サーバーに「こいこい」か「終了」の結果を送信
+        String koiKoiMessage = String.format("KOIKOI_RESPONSE:%d", choice);
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(new URI(serverUrl + "/game/play")) // 同じエンドポイントを利用
+                .POST(HttpRequest.BodyPublishers.ofString(koiKoiMessage))
+                .header("Session-ID", sessionId)
+                .header("Content-Type", "text/plain")
+                .build();
+    
+            HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                System.out.println("こいこい選択完了: " + response.body());
+            } else {
+                throw new RuntimeException("こいこい選択エラー: " + response.statusCode());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("こいこい選択中にエラーが発生しました。");
+        }
+    }
+    private void handleNextTurn(String responseBody) {
+        System.out.println("次のターンに進みます: " + responseBody);
+        //次のターンにいく。勝手に盤面は変わるけど、カットイン演出とか入れるならここで呼び出す。
+    }
+    private void handleGameEnd(String responseBody) {
+        System.out.println("ゲーム終了: " + responseBody);
+    
+        // ゲーム終了時の処理を書く
+    }
+
+    //PlayCardの補助関数ここまで
+
     public void disconnect() throws Exception {
         if (sessionId == null || sessionId.isEmpty()) {
             System.out.println("セッションIDが未設定のため、切断通知をスキップします。");

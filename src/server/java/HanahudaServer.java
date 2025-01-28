@@ -27,7 +27,7 @@ public class HanahudaServer {
         server.createContext("/session", new SessionHandler(clientSessionManager));
         server.createContext("/game/playerId", new PlayerIdHandler(gameSessionManager));
         server.createContext("/session/terminate", new TerminateSessionHandler(gameSessionManager));
-        // server.createContext("/game/playerInfo", new PlayerInfoHandler(gameSessionManager));
+        server.createContext("/game/next", new NextTurnHandler(gameSessionManager));
         server.createContext("/game/player", new PlayerHandler(gameSessionManager));
 
 
@@ -43,7 +43,6 @@ public class HanahudaServer {
     }
 }
 
-
 class PlayCardHandler implements HttpHandler {
     private GameSessionManager gameSessionManager;
 
@@ -57,12 +56,13 @@ class PlayCardHandler implements HttpHandler {
             exchange.sendResponseHeaders(405, -1); // Method Not Allowed
             return;
         }
-
+        System.out.println("PlayCardHandlerで受信したリクエストメソッド: " + exchange.getRequestMethod());
         String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
         System.out.println("受信したセッションID: " + sessionId);
         String message = new String(exchange.getRequestBody().readAllBytes());
-
+        System.out.println("メッセージ: " + message);
         String response = gameSessionManager.processMessage(sessionId, message);
+        System.out.println("レスポンス: " + response);
         exchange.sendResponseHeaders(200, response.getBytes().length);
         OutputStream os = exchange.getResponseBody();
         os.write(response.getBytes());
@@ -222,64 +222,58 @@ class TerminateSessionHandler implements HttpHandler {
         }
     }
 }
-// class PlayerInfoHandler implements HttpHandler {
-//     private GameSessionManager gameSessionManager;
+class NextTurnHandler implements HttpHandler {
+    private GameSessionManager gameSessionManager;
 
-//     public PlayerInfoHandler(GameSessionManager gameSessionManager) {
-//         this.gameSessionManager = gameSessionManager;
-//     }
+    public NextTurnHandler(GameSessionManager gameSessionManager) {
+        this.gameSessionManager = gameSessionManager;
+    }
 
-//     @Override
-//     public void handle(HttpExchange exchange) throws IOException {
-//         if (!"POST".equals(exchange.getRequestMethod())) {
-//             exchange.sendResponseHeaders(405, -1); // Method Not Allowed
-//             return;
-//         }
+    @Override
+    public void handle(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+            return;
+        }
 
-//         String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
-//         if (sessionId == null || sessionId.isEmpty()) {
-//             String response = "ERROR: セッションIDが提供されていません";
-//             exchange.sendResponseHeaders(400, response.getBytes().length);
-//             try (OutputStream os = exchange.getResponseBody()) {
-//                 os.write(response.getBytes());
-//             }
-//             return;
-//         }
+        String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
+        if (sessionId == null || sessionId.isEmpty()) {
+            String response = "ERROR: セッションIDが提供されていません";
+            exchange.sendResponseHeaders(400, response.getBytes().length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+            return;
+        }
 
-//         // リクエストボディを解析
-//         String body = new String(exchange.getRequestBody().readAllBytes());
-//         System.out.println("[DEBUG] 受信したプレイヤー情報: " + body);
-//         String[] parts = body.split(":");
-//         if (parts.length != 3) {
-//             String response = "ERROR: 無効なリクエスト形式";
-//             exchange.sendResponseHeaders(400, response.getBytes().length);
-//             try (OutputStream os = exchange.getResponseBody()) {
-//                 os.write(response.getBytes());
-//             }
-//             return;
-//         }
-
-//         String playerName = parts[0];
-//         int iconNum = Integer.parseInt(parts[1]);
-//         int level = Integer.parseInt(parts[2]);
-
-//         try {
-//             int playerId = gameSessionManager.getPlayerId(sessionId);
-//             gameSessionManager.setPlayerInfo(playerId, playerName, iconNum, level);
-//             String response = "Player info saved: " + playerName;
-//             exchange.sendResponseHeaders(200, response.getBytes().length);
-//             try (OutputStream os = exchange.getResponseBody()) {
-//                 os.write(response.getBytes());
-//             }
-//         } catch (Exception e) {
-//             String response = "ERROR: " + e.getMessage();
-//             exchange.sendResponseHeaders(500, response.getBytes().length);
-//             try (OutputStream os = exchange.getResponseBody()) {
-//                 os.write(response.getBytes());
-//             }
-//         }
-//     }
-// }
+        // リクエストボディを解析
+        String body = new String(exchange.getRequestBody().readAllBytes());
+        System.out.println("[DEBUG] 受信したリクエスト: " + body);
+        
+        if(body == "KOIKOI" || body == "NEXTTURN"){
+            //NEXTTURN
+            gameSessionManager.nextTurn();
+            //return "NEXT";
+            return;
+        }else if(body == " END"){
+            //KOIKOI = false
+            //ENDGAME
+            gameSessionManager.endGame();
+            //return "END";
+            return;
+        }else{
+            //ERROR
+            String response = "ERROR: 無効なリクエスト形式";
+            exchange.sendResponseHeaders(400, response.getBytes().length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+            return;
+        }
+ 
+        
+    }
+}
 class PlayerHandler implements HttpHandler {
     private GameSessionManager gameSessionManager;
 

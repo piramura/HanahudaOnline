@@ -13,6 +13,8 @@ public class GameController {
     private List<Integer> player2Hands;
     private List<Integer> player1Captures;
     private List<Integer> player2Captures;
+    private PlayerInfo selfInfo;
+    private PlayerInfo opponentInfo;
     private int currentTurn;
     private int playerId; // 自分のプレイヤーIDを管理
     private int elapsedTime = 0;
@@ -60,7 +62,48 @@ public class GameController {
     public void setCurrentTurn(int currentTurn) {
         this.currentTurn = currentTurn;
     }
+    private PlayerInfo parsePlayerInfo(String playerInfoString) {
+        //System.out.println("[DEBUG] サーバーから受信したプレイヤー情報: " + playerInfoString);
+        String cleaned = playerInfoString.replace("PlayerInfo{", "").replace("}", "");
+        // 各項目を分割
+        String[] parts = playerInfoString.split(", ");
+        if (parts.length < 3) {
+            throw new IllegalArgumentException("プレイヤー情報が不完全です: " + playerInfoString);
+        }
+        // 各項目を解析
+        String playerName = parts[0].split(": ")[1].trim(); // Name
+        int iconNum = Integer.parseInt(parts[1].split(": ")[1].trim()); // Icon
+        int level = Integer.parseInt(parts[2].split(": ")[1].trim()); // Level
 
+        return new PlayerInfo(playerName, iconNum, level);
+    }
+
+    public PlayerInfo getSelfInfo() {
+        return selfInfo;
+    }
+
+    public PlayerInfo getOpponentInfo() {
+        return opponentInfo;
+    }
+    public void fetchAndSetPlayerInfo(String response) {
+        try {
+            // サーバーからプレイヤー情報を取得
+            
+
+            // レスポンスを解析して情報を設定
+            String[] infos = response.split("\n"); // 自分と相手の情報が改行で分かれていると仮定
+            for (String info : infos) {
+                if (info.contains("Your Info")) {
+                    selfInfo = parsePlayerInfo(info.replace("Your Info - ", ""));
+                } else if (info.contains("Opponent Info")) {
+                    opponentInfo = parsePlayerInfo(info.replace("Opponent Info - ", ""));
+                }
+            }
+
+        } catch (Exception e) {
+            System.err.println("[ERROR] プレイヤー情報の取得に失敗しました: " + e.getMessage());
+        }
+    }
     // public boolean isChange(String rawGameState) {
     //     boolean stateChanged = false;
 
@@ -116,7 +159,7 @@ public class GameController {
     }
     */
     public void pollGameState() {
-        Timer timer = new Timer(1000, e -> {
+        Timer timer = new Timer(5000, e -> {
             try {
                 gameClient.fetchGameState();
             } catch (Exception ex) {
@@ -157,6 +200,7 @@ public class GameController {
             System.out.println("[DEBUG] 相手の手札 (Player" + playerNumber + "): " + hands);
         }
     }
+
     // public void refreshUI() {
     //     onlineGame.updateBoard(getField());
     //     onlineGame.updatePlayerHand(getplayer1Hands());
@@ -241,7 +285,32 @@ public class GameController {
     // オンライン対戦開始
     public void startOnlineMatch() {
         try {
-            gameClient.initializeSession("default_passphrase");
+            boolean sessionInitialized =false;
+            int maxAttempts = 10;
+            int attempt = 0;
+
+            while (!sessionInitialized && attempt < maxAttempts) {
+                attempt++;
+                try {
+                    gameClient.initializeSession("default_passphrase");
+                    sessionInitialized = true;
+                    System.out.println("セッションが正常に初期化されました！");
+                } catch (Exception e) {
+                    System.err.println("セッションの初期化に失敗しました (試行回数: " + attempt + "): " + e.getMessage());
+                    if (attempt == maxAttempts) {
+                        System.err.println("最大試行回数に達しました。処理を終了します。");
+                        break;
+                    }
+                    try {
+                        System.out.println("5秒後に再試行します...");
+                        Thread.sleep(5000);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            }
+            // gameClient.initializeSession("default_passphrase");
+
             playerId = gameClient.fetchPlayerId(); // 自分のPlayerIDを取得
             System.out.println("現在の Player ID: " + playerId);
             
@@ -275,9 +344,10 @@ public class GameController {
                         if(gameClient.isGameStarted()) {
                             ((Timer) e.getSource()).stop();
                             System.out.println("ゲームが開始されました!");
-                            // ポーリングを開始
-                            gameClient.fetchPlayerInfo();
-                            pollGameState();
+                            //System.out.println("遅延後に fetchPlayerInfo を呼び出します...");
+                            gameClient.fetchPlayerInfo(); // 遅延後に呼び出し
+                            pollGameState(); // 状態取得を開始
+                            startPlayCardTest();//テスト用コード
                         } else {
                             System.out.println("ゲームが開始されるのを待っています...");
                         }
@@ -292,11 +362,55 @@ public class GameController {
             System.err.println("セッションの初期化に失敗しました: " + e.getMessage());
         }
     }
+    
+    private void startPlayCardTest() {
+            try {
+                if (gameClient == null) {
+                    System.out.println("ゲームコントローラーまたはクライアントが未初期化です。");
+                    return;
+                }
 
+                // サーバーからゲーム状態を取得
+                gameClient.fetchGameState();
+
+                // 手札と場札を取得
+                List<Integer> hand = player1Hands;
+                List<Integer> fields = field;
+
+                if (hand.isEmpty()) {
+                    System.out.println("手札が空です。テストを終了します。");
+                    return;
+                }
+
+                // 手札の0番目のカードを選択
+                int selectedHandCardId = hand.get(0);
+
+                // 場札から同じカードを探す
+                int selectedFieldCardId = -1; // デフォルトは -1
+                for (int fieldCardId : fields) {
+                    if ((fieldCardId+3)/4 == (selectedHandCardId+3)/4) {
+                        selectedFieldCardId = fieldCardId;
+                        break;
+                    }
+                }
+
+                // playCard メソッドを呼び出す
+                System.out.println("選択した手札のカードID: " + selectedHandCardId);
+                System.out.println("選択した場のカードID: " + selectedFieldCardId);
+                
+                gameClient.playCard(selectedHandCardId, playerId, selectedFieldCardId);//ここ
+
+            } catch (Exception ex) {
+                System.err.println("仮関数中にエラーが発生しました: " + ex.getMessage());
+                ex.printStackTrace();
+            }
+        
+
+    }
     // カードをクリックしたときの処理
     public void handleCardClick(int cardID) {
         try {
-            gameClient.playCard(cardID,this.playerId);
+            //gameClient.playCard(cardID,this.playerId);
             gameClient.fetchGameState();
             //refreshUI();
         } catch (Exception e) {

@@ -23,6 +23,7 @@ public class Lobby extends JFrame {
         });
 
         add(onlineButton, BorderLayout.CENTER);
+        
         setVisible(true);
     }
     // オンライン対戦開始
@@ -37,9 +38,35 @@ public class Lobby extends JFrame {
         client.setGameController(gameController);
         gameController.setGameClient(client);
         gameController.startOnlineMatch();
-
+        // Shutdown Hookの登録
+        // ➡️ 「ゲーム終了」ボタンの追加
+        JButton exitButton = new JButton("ゲーム終了");
+        exitButton.addActionListener(e -> {
+            try {
+                client.disconnect();
+                System.exit(0);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "切断中にエラーが発生しました: " + ex.getMessage());
+            }
+        });
+        add(exitButton, BorderLayout.EAST);
+        addShutdownHook();
+        setVisible(true);
     }
     public static void main(String[] args) {
         new Lobby();
     }
+    private void addShutdownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            if (client != null) {
+                try {
+                    System.out.println("Ctrl + C 検出: 切断処理を実行中...");
+                    client.disconnect();
+                } catch (Exception e) {
+                    System.err.println("切断処理中にエラーが発生しました: " + e.getMessage());
+                }
+            }
+        }));
+    }
+    
 }

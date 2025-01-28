@@ -1,8 +1,10 @@
 import java.util.ArrayList;
 import java.util.List;
+
 public class HanahudaGameLogic {
     private Game game;
     private int currentPlayerIndex;
+    private int playCount = 0; // 現在のターンでのプレイ回数
 
     public void  resetGame() {
         Deck deck = new Deck();
@@ -29,11 +31,34 @@ public class HanahudaGameLogic {
 
     // 場のカードをセットアップ
     private void setupField() {
-        for (int i = 0; i < 8; i++) {
-            game.getField().addCard(game.getDeck().draw());
+        while (true) {
+            game.getField().clear();
+            for (int i = 0; i < 8; i++) {
+                game.getField().addCard(game.getDeck().draw());
+            }
+            //同じ月のカードが4枚以上あるかチェック
+            if (!hasFourSameMonthCards(game.getField().getCards())) {
+                break; // 問題がなければループを抜ける
+            }
+            // 問題がある場合はデッキを再シャッフル
+            System.out.println("フィールドに同じ月のカードが4枚以上あります。再セットアップを行います。");
+            game.getDeck().shuffle();
         }
     }
-
+    private boolean hasFourSameMonthCards(List<Card> cards) {
+        int[] monthCounts = new int[12]; // 月ごとのカウント用配列（0～11のインデックス）
+    
+        for (Card card : cards) {
+            int month = (card.getId() - 1) / 4; // IDを4で割り、0～11の月を取得
+            monthCounts[month]++;
+            if (monthCounts[month] >= 4) {
+                return true;
+            }
+        }
+    
+        return false; // 問題なし
+    }
+    /*
     // プレイヤーのアクション（カードを出すなど）を処理し、ゲームの進行を制御。
     // 入力検証、カードのプレイ、ルールの適用を行う。
     public String processPlayerAction(int playerIndex, String action) {
@@ -67,6 +92,38 @@ public class HanahudaGameLogic {
 
         return result + "\n次のターンはプレイヤー " + (currentPlayerIndex + 1) + " です。";
     }
+    */
+    public String processPlayerAction(int playerIndex, int handCardId, int fieldCardId) {
+    
+            String playResult = handleCardPlay(playerIndex, handCardId, fieldCardId);
+            playCount++;
+            if (playCount >= 2) {
+                // 2回プレイしたら返信を作成
+                // 役判定
+                RoleResult roleResult = RoleChecker.checkRules(game.getPlayers().get(playerIndex));
+                if (!roleResult.getAchievedRoles().isEmpty()) {
+                    System.out.println("役が成立しました: " + roleResult.getAchievedRoles());
+
+                    // 「こいこい」待機状態にする
+                    game.setKoiKoi(playerIndex, true); // プレイヤーを「こいこい中」に設定
+
+                    return "KOIKOI_WAITING: 役が成立しました。「こいこい」を選択してください。\n" +
+                        "役: " + roleResult.getAchievedRoles() + "\n" +
+                        "得点: " + roleResult.getTotalScore();
+                }
+                // // ゲーム終了判定は別の処理で
+                // if (isGameFinished()) {
+                //     return "GAME_END: ゲーム終了！勝者: " + determineWinner();
+                // }
+
+                // 次のターンに進む
+                //nextTurn();
+                return "NEXT_TURN: プレイヤー " + ((currentPlayerIndex + 1)%2) + " のターンです。\n" + playResult;
+            }else{
+                return "CONTINUE_TURN: プレイヤー " + (playerIndex + 1) + " のターンが継続中です。\n" + playResult;
+            }
+    }
+    
     private String askKoiKoi(int playerIndex, RoleResult roleResult) {
         Player player = game.getPlayers().get(playerIndex);
     
@@ -87,10 +144,7 @@ public class HanahudaGameLogic {
         }
     }
     
-
-    
-
-    public String handleCardPlay(int playerIndex, int cardId) {//プレイヤーの指定したカードを処理し、ゲームの進行を行う。
+    public String handleCardPlay(int playerIndex, int cardId,int fieldcard) {//プレイヤーの指定したカードを処理し、ゲームの進行を行う。
         Player player = game.getPlayers().get(playerIndex);
         // 手札内のインデックスを取得
         int handIndex = findCardIndexInHand(player, cardId);
@@ -98,17 +152,20 @@ public class HanahudaGameLogic {
 
         // 手札からカードをプレイ
         Card playedCard = player.playCard(handIndex);
-
-        game.getField().processPlayedCard(player, playedCard); // Field に委譲
+        //playするだけで実質的には与えられたfieldcardを使うように変更
+        game.getField().processPlayedCard(player, playedCard,fieldcard); // Field に委譲
         Card drawnCard = game.getDeck().draw();
         if (drawnCard != null) {
-            game.getField().processDrawnCard(player, drawnCard); // Field に委譲
+            game.getField().processDrawnCard(player,drawnCard); // Field に委譲
         }
 
         nextTurn();
         return "プレイヤー " + (playerIndex + 1) + " がカードをプレイしました。\n";
     }
-    private String determineWinner() {
+    public void continueGame(){
+        //ゲーム続けるから空の処理
+    }
+    public String determineWinner() {
         Player player1 = game.getPlayers().get(0);
         Player player2 = game.getPlayers().get(1);
 
@@ -158,51 +215,29 @@ public class HanahudaGameLogic {
     private boolean isCurrentPlayer(int playerIndex) {
         return playerIndex == (currentPlayerIndex % 2);
     }
-
-    private void nextTurn() {
-        currentPlayerIndex = currentPlayerIndex + 1;
-        game.setNowTurn(currentPlayerIndex);
+    //これらはパブリックで管理される。
+    public void nextTurn() {
+        if(!isGameFinished()){
+            playCount = 0; // プレイ回数をリセット
+            currentPlayerIndex = currentPlayerIndex + 1;
+            game.setNowTurn(currentPlayerIndex);
+        }else{
+            endGame();
+        }
+        
+    }
+    public void endGame(){
+        //ゲーム終了処理
+        //リザルトを返してゲームリセット
     }
 
     public boolean isGameFinished() {
-        boolean bothHandsEmpty = game.getPlayers().stream().allMatch(player -> player.getHand().isEmpty());
-        boolean anyPlayerDeclaredEnd = game.getPlayers().stream().anyMatch(Player::hasDeclaredEnd);
-        // 両方のプレイヤーの手札が空、またはどちらかが役を成立させ「こいこい」をしない場合
-        return bothHandsEmpty || anyPlayerDeclaredEnd;
+        //こいこい判定する必要性ある？こいこいするときは全部ゲームセッションマネージャーがやってくれる。
+        if(game.isBothHandEmpty()){
+            return true;
+        }else{
+            return false;
+        }
     }
     
-    public void playComputerTurn() {
-        Player computer = game.getPlayers().get(currentPlayerIndex);
-        ArrayList<Card> hand = computer.getHand();
-        Field field = game.getField();
-
-        Card bestCard = null;
-        int maxScore = 0;
-
-        for (Card card : hand) {
-            int potentialScore = calculatePotentialScore(card, field);
-            if (potentialScore > maxScore) {
-                maxScore = potentialScore;
-                bestCard = card;
-            }
-        }
-
-        if (bestCard != null) {
-            System.out.println("コンピュータがカードをプレイしました: " + bestCard);
-            handleCardPlay(currentPlayerIndex, bestCard.getId());
-        } else {
-            System.out.println("コンピュータがランダムなカードをプレイしました。");
-            handleCardPlay(currentPlayerIndex, hand.get(0).getId());
-        }
-    }
-
-    private int calculatePotentialScore(Card card, Field field) {
-        int score = 0;
-        for (Card fieldCard : field.getCards()) {
-            if (fieldCard.getMonth() == card.getMonth()) {
-                score += fieldCard.getRole().stream().mapToInt(Card.Role::getScore).sum();
-            }
-        }
-        return score;
-    }
 }
