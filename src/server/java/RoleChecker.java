@@ -92,12 +92,12 @@ public class RoleChecker {
         }
 
         // 花見で一杯、月見で一杯
-        if (hanamiCount > 0) {
+        if (hanamiCount == 2) {
             totalScore += 5;
             achievedScores.add(5);
             achievedRoles.add("花見で一杯");
         }
-        if (tsukimiCount > 0) {
+        if (tsukimiCount == 2) {
             totalScore += 5;
             achievedScores.add(5);
             achievedRoles.add("月見で一杯");

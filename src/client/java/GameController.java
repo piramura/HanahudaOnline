@@ -20,6 +20,7 @@ public class GameController {
     private int elapsedTime = 0;
     private boolean isActive = false;
     private int playCount;
+    private boolean isKoikoi = false;
 
     public List<Integer> getField() {
         return field;
@@ -43,6 +44,10 @@ public class GameController {
         return player2Captures;
     }
 
+    public boolean getIsKoikoi(){
+        return isKoikoi;
+    }
+
     public void setPlayer1Hands(List<Integer> player1Hands) {
         this.player1Hands = player1Hands;
     }
@@ -63,6 +68,11 @@ public class GameController {
     public void setCurrentTurn(int currentTurn) {
         this.currentTurn = currentTurn;
     }
+
+    public void setIsKoikoi(boolean isKoikoi) {
+        this.isKoikoi = isKoikoi;
+    }
+
     private PlayerInfo parsePlayerInfo(String playerInfoString) {
         //System.out.println("[DEBUG] サーバーから受信したプレイヤー情報: " + playerInfoString);
         String cleaned = playerInfoString.replace("PlayerInfo{", "").replace("}", "");
@@ -159,23 +169,12 @@ public class GameController {
         }
     }
     */
-    public void pollGameState() {
-        Timer timer = new Timer(5000, e -> {
-            try {
-                gameClient.fetchGameState();
-            } catch (Exception ex) {
-                System.err.println("ゲーム状態の取得に失敗: " + ex.getMessage());
-            }
-        });
-        timer.start();
-    }
-
     public void parseGameState(String rawGameState) {
         
-        System.out.println("[DEBUG] ゲーム状態: " + rawGameState);
+        // System.out.println("[DEBUG] ゲーム状態: " + rawGameState);
         String[] lines = rawGameState.split("\n");
         for (String line : lines) {
-            System.out.println("[DEBUG] 処理中の行: " + line);
+            // System.out.println("[DEBUG] 処理中の行: " + line);
             if (line.startsWith("Field:")) {
                 setField(parseCardList(line.substring(7)));
             } else if (line.startsWith("PlayerHand1 :")) {
@@ -195,10 +194,10 @@ public class GameController {
         List<Integer> hands = parseCardList(cardData);
         if (playerId == playerNumber) {
             setPlayer1Hands(hands);
-            System.out.println("[DEBUG] 自分の手札 (Player" + playerNumber + "): " + hands);
+            // System.out.println("[DEBUG] 自分の手札 (Player" + playerNumber + "): " + hands);
         } else {
             setPlayer2Hands(hands);
-            System.out.println("[DEBUG] 相手の手札 (Player" + playerNumber + "): " + hands);
+            // System.out.println("[DEBUG] 相手の手札 (Player" + playerNumber + "): " + hands);
         }
     }
 
@@ -227,12 +226,12 @@ public class GameController {
     }
     private void handlePlayerCaptures(int playerNumber, String cardData) {
         List<Integer> captures = parseCardList(cardData);
-        if (playerId == playerNumber) {
+        if (1 == playerNumber) {
             setPlayer1Captures(captures);
-            System.out.println("[DEBUG] 自分の取得カード (Player" + playerNumber + "): " + captures);
+            // System.out.println("[DEBUG] 自分の取得カード (Player" + playerNumber + "): " + captures);
         } else {
             setPlayer2Captures(captures);
-            System.out.println("[DEBUG] 相手の取得カード (Player" + playerNumber + "): " + captures);
+            // System.out.println("[DEBUG] 相手の取得カード (Player" + playerNumber + "): " + captures);
         }
     }
     public void setGameClient(GameClient gameClient) {
@@ -249,6 +248,10 @@ public class GameController {
 
     public boolean getIsActive() {
         return isActive;
+    }
+
+    public int getPlayerId() {
+        return playerId;
     }
 
     // // イベントリスナーを設定
@@ -348,7 +351,6 @@ public class GameController {
                             //System.out.println("遅延後に fetchPlayerInfo を呼び出します...");
                             gameClient.fetchPlayerInfo(); // 遅延後に呼び出し
                             playCount=0;
-                            //pollGameState(); // 状態取得を開始
                             //startPlayCardTest();//テスト用コード
                             //gameClient.fetchGameState();
                         } else {
@@ -367,7 +369,7 @@ public class GameController {
     }
     public void fetchState(){
         try {
-            gameClient.fetchGameState();
+            gameClient.fetchGameStateAsync();
         }catch(Exception e){
             System.err.println("fetchStateにエラーが発生しました: " + e.getMessage());
                 e.printStackTrace();

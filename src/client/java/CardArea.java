@@ -11,9 +11,6 @@ public class CardArea extends JPanel {
     public CardArea(int rows, int cols, GameController controller) {
         this.cards = new ArrayList<>();
         this.controller = controller; // コントローラーを保持
-        setLayout(new GridLayout(rows, cols, 10, 10)); // グリッド設定
-        setPreferredSize(new Dimension(400, 200)); // サイズ調整
-        setFocusable(true); // フォーカス可能にする
     }
 
     public int getCardCount() {
@@ -56,32 +53,36 @@ public class CardArea extends JPanel {
     }
 
     public void updateCards(List<Integer> newCardIds) {
-        System.out.println("更新前のカード数: " + cards.size());
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // 差分計算: 追加が必要なカードID
-                List<Integer> cardsToAdd = new ArrayList<>(newCardIds);
-                cardsToAdd.removeAll(cards);
-                // 差分計算: 削除が必要なカードID
-                List<Integer> cardsToRemove = new ArrayList<>(cards);
-                cardsToRemove.removeAll(newCardIds);
-                // 削除
-                for (Integer cardId : cardsToRemove) {
-                    cards.remove(cardId);
-                    // 必要に応じて具体的なUI要素削除を追加
-                }
-                // 追加
-                for (Integer cardId : cardsToAdd) {
-                    addCard(cardId);
-                }
-                revalidate();
-                repaint();
-            } catch (Exception e) {
-                System.err.println("CardArea のカード更新中にエラー: " + e.getMessage());
-                e.printStackTrace();
+    System.out.println("更新前のカード数: " + cards.size());
+    SwingUtilities.invokeLater(() -> {
+        try {
+            // 差分計算: 追加が必要なカードID
+            List<Integer> cardsToAdd = new ArrayList<>(newCardIds);
+            cardsToAdd.removeAll(cards);
+
+            // 差分計算: 削除が必要なカードID
+            List<Integer> cardsToRemove = new ArrayList<>(cards);
+            cardsToRemove.removeAll(newCardIds);
+
+            // 削除
+            for (Integer cardId : cardsToRemove) {
+                cards.remove(cardId);
+                // 必要に応じて具体的なUI要素削除を追加
             }
-        });
-        System.out.println("新しいカード数: " + newCardIds.size());
-    }
+
+            // 追加
+            for (Integer cardId : cardsToAdd) {
+                addCard(cardId);
+            }
+
+            revalidate();
+            repaint();
+        } catch (Exception e) {
+            System.err.println("CardArea のカード更新中にエラー: " + e.getMessage());
+            e.printStackTrace();
+        }
+    });
+    System.out.println("新しいカード数: " + newCardIds.size());
+}
 
 }

@@ -113,7 +113,7 @@ public class GameSessionManager {
                 return "ERROR: プレイヤーIDが一致しません";
             }
             // ゲームロジックにカード情報を渡す
-            return gamelogic.processPlayerAction(playerId - 1, cardInfo,fieldCardInfo);
+            return gamelogic.processPlayerAction(playerId, cardInfo,fieldCardInfo);
         }
         return "ERROR: 未知のコマンド";
     }
@@ -128,6 +128,10 @@ public class GameSessionManager {
     }
     public synchronized String getGameState(String sessionId) {
         Game game = gamelogic.getGame();
+        if(game == null){
+            System.out.println("EROOR Game == null");
+            return "EROOR";
+        }
         Integer playerNumber = clientSessions.get(sessionId);
         if (playerNumber == null) {
             return "ERROR: セッションが見つかりません";
@@ -156,10 +160,11 @@ public class GameSessionManager {
                 }
             gameState.append("\n");
         }
-        gameState.append("現在のターン: ").append(game.getCurrentPlayerIndex()).append("\n");
+        //
+        gameState.append("現在のターン: ").append(game.getCurrentTurn()).append("\n");
         gameState.append("\n");
         
-        System.out.println("DEBUG ゲーム状態: " + gameState);
+        //System.out.println("DEBUG ゲーム状態: " + gameState);
         return gameState.toString();
     }
     public synchronized int getPlayerId(String sessionId) {
@@ -195,6 +200,7 @@ public class GameSessionManager {
     }
     //ゲーム進行
     public void nextTurn(){
+        System.out.println("DEBUG:  GameSessionManagerでnextTurn()が呼ばれました");
         gamelogic.nextTurn();
     }
     public void endGame(){

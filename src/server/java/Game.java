@@ -7,12 +7,14 @@ public class Game {
     private Field field;
     private int currentPlayerIndex;
     private int playCount;
+    private int currentTurn;
 
     public Game(Deck deck) {
         this.deck = deck;
         this.field = new Field();
         this.players = new ArrayList<>();
         this.currentPlayerIndex = 0;
+        this.currentTurn = 0;//初期化するときに0か1かランダム
         this.playCount = 0;
     }
     // 初期化メソッド
@@ -74,6 +76,14 @@ public class Game {
     public List<Player> getPlayers() {
         return players;
     }
+     //現在のターン
+    public int getCurrentTurn() {
+        return currentTurn;
+    }
+   
+    public void setCurrentTurn(int index) {
+        this.currentTurn = index;
+    }
     public int getCurrentPlayerIndex() {
         return currentPlayerIndex;
     }
@@ -103,7 +113,9 @@ public class Game {
             endGame();
         } else {
             playCount = 0; // プレイ回数をリセット
-            currentPlayerIndex = (currentPlayerIndex + 1) % players.size(); // 次のプレイヤーに切り替え
+            System.out.println("次のターンへ。現在のプレイヤー: " + currentTurn);
+            currentTurn++;
+            currentPlayerIndex = currentTurn % 2 + 1; // 次のプレイヤーに切り替え
             System.out.println("次のターンへ。現在のプレイヤー: " + currentPlayerIndex);
         }
     }

@@ -61,8 +61,11 @@ class PlayCardHandler implements HttpHandler {
         String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
         String message = new String(exchange.getRequestBody().readAllBytes());
         String response = gameSessionManager.processMessage(sessionId, message);//response作成
-        System.out.println("Response");
+        System.out.println("Response作成成功");
         System.out.println(response);
+        if(response == null){
+            System.out.println("Responsが空です");
+        }
         exchange.sendResponseHeaders(200, response.getBytes().length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes());
@@ -244,12 +247,14 @@ class NextTurnHandler implements HttpHandler {
         // リクエストボディを解析
         String body = new String(exchange.getRequestBody().readAllBytes());
         System.out.println("[DEBUG] 受信したリクエスト: " + body);
-        if ("KOIKOI".equals(body) || "NEXTTURN".equals(body)) {
+        String response;
+        if ("KOIKOI".equals(body) || "NEXT_TURN".equals(body)) {
+            System.out.println("[DEBUG] 次のターンへ進めます。");
             gameSessionManager.nextTurn();
         } else if ("END".equals(body)) {
             gameSessionManager.endGame();
         } else {
-            String response = "ERROR: 無効なリクエスト形式";
+            response = "ERROR: 無効なリクエスト形式";
             exchange.sendResponseHeaders(400, response.getBytes().length);
             try (OutputStream os = exchange.getResponseBody()) {
                 os.write(response.getBytes());
