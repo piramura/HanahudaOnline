@@ -552,8 +552,8 @@ class Lobby extends JPanel implements ActionListener {
                     String newPlayerName = playerNameInputField.getText();
                     AppPreferences.putString("playerName", newPlayerName);
                     gameController = new GameController();
-                    client = new GameClient("https://hanahudaonline.onrender.com");
-                    //client = new GameClient("http://localhost:10030");
+                    //client = new GameClient("https://hanahudaonline.onrender.com");
+                    client = new GameClient("http://localhost:10030");
                     client.setGameController(gameController);
                     gameController.setGameClient(client);
                     gameController.startOnlineMatch();

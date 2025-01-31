@@ -79,14 +79,14 @@ public class HanahudaGameLogic {
             System.out.println("ばにカードをおきます");
         }else{
             Field field = game.getField();
-            Card fieldCard = game.getField().takeCardById(fieldcard);
-            if (!field.isThreeCards(fieldCard)) {
+            if (!field.isThreeCards(playedCard)) {
+                Card fieldCard = game.getField().takeCardById(fieldcard);
                 System.out.println("三枚ないとき");
                 player.captureCard(fieldCard);
                 player.captureCard(playedCard);
             } else {
                 
-                List<Card> takenCards = field.takeCardsByMonth(fieldCard.getMonth());
+                List<Card> takenCards = field.takeCardsByMonth(playedCard.getMonth());
                 System.out.println("DEBUG: 三枚のカードある場合"+takenCards);
                 for (Card card : takenCards) {
                     player.captureCard(card);

@@ -62,7 +62,7 @@ public class Field {
                 count++;
             }
         }
-        return count == 3; // 3枚の場合に true を返す
+        return count == 2; // 2枚の場合に true を返す一枚はすでに取ってるから
     }
     public ArrayList<Card> takeCardsByMonth(Card.Month month) {
         ArrayList<Card> takenCards = new ArrayList<>();
