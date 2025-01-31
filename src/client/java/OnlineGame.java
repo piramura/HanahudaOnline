@@ -658,7 +658,7 @@ class OnlineGame extends JPanel {
                     }
                     isKOIKOI = false;
                     try {
-                        controller.getGameClient().disconnect();
+                        //controller.getGameClient().disconnect();
                     } catch (Exception ex) {
                         ex.printStackTrace();
                     }

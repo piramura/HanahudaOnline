@@ -123,7 +123,7 @@ public class GameSessionManager {
             return "NEXT_TURN: 「こいこい」を選択しました。次のターンに進みます。";
         } else {
             System.out.println("プレイヤー " + (playerIndex + 1) + " がゲームを終了しました。");
-            return "GAME_END: ゲーム終了！勝者: " + gamelogic.determineWinner();
+            return "GAME_END: ゲーム終了！";
         }
     }
     public synchronized String getGameState(String sessionId) {
@@ -137,7 +137,7 @@ public class GameSessionManager {
             return "ERROR: セッションが見つかりません";
         }
         if (gamelogic.isGameFinished()) {
-            return "ゲーム終了: プレイヤー " + playerNumber+ " が勝利しました！";
+            return "GAME_END: gamelogic.isGameFinished()！";
         }
         
 

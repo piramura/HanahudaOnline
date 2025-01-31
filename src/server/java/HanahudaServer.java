@@ -251,8 +251,20 @@ class NextTurnHandler implements HttpHandler {
         if ("KOIKOI".equals(body) || "NEXT_TURN".equals(body)) {
             System.out.println("[DEBUG] 次のターンへ進めます。");
             gameSessionManager.nextTurn();
+            response = "NEXT_TURN: NEXT_TURN";
+            exchange.sendResponseHeaders(400, response.getBytes().length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+            return;
         } else if ("END".equals(body)) {
             gameSessionManager.endGame();
+            response = "GAME_END: ゲーム終了";
+            exchange.sendResponseHeaders(400, response.getBytes().length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes());
+            }
+            return;
         } else {
             response = "ERROR: 無効なリクエスト形式";
             exchange.sendResponseHeaders(400, response.getBytes().length);

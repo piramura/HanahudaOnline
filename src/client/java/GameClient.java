@@ -158,7 +158,12 @@ public class GameClient {
             .thenApply(HttpResponse::body)
             .thenAccept(responseBody -> {
                 System.out.println("ゲーム状態: " + responseBody);
-                controller.parseGameState(responseBody);
+                if(responseBody.startsWith("GAME_END")){
+                    controller.setIsEnd(true);
+                    System.out.println("controller.getIsEnd(): " + controller.getIsEnd());
+                }else{
+                    controller.parseGameState(responseBody);
+                }
             })
             .exceptionally(ex -> {
                 System.err.println("ゲーム状態取得エラー: " + ex.getMessage());
@@ -223,6 +228,7 @@ public class GameClient {
                 System.out.println("返事: " + responseBody);
                 if (responseBody.startsWith("NEXT_TURN")) {
                     System.out.println("NEXT_TURN続けます: ");
+                    fetchGameStateAsync();
                 } else if (responseBody.startsWith("GAME_END")) {
                     System.out.println("ゲーム終了: ");
                 } else {

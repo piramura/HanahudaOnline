@@ -47,8 +47,13 @@ public class HanahudaGameLogic {
                 tmpPlayerid = 0;
             }
             System.out.println("DEBUG: game.getPlayers().get(playerIndex)"+game.getPlayers().get(tmpPlayerid));
-
-            RoleResult roleResult = RoleChecker.checkRules(game.getPlayers().get(tmpPlayerid));
+            RoleResult roleResult = new RoleResult(-1,List.of(""),-1);
+            try{
+                roleResult = RoleChecker.checkRules(game.getPlayers().get(tmpPlayerid));
+            }catch(Exception e){
+                System.err.println("ERROR: RoleResultでエラー");
+            }
+            
             System.out.println("DEBUG: roleResult "+roleResult);
             if (!roleResult.getAchievedRoles().isEmpty()) {
                 //game.getPlayers().get(playerIndex).addScore(roleResult.getTotalScore());
@@ -56,7 +61,12 @@ public class HanahudaGameLogic {
                        "役: " + roleResult.getAchievedRoles() + "\n" +
                        "得点: " + roleResult.getTotalScore();
             }else{
-                return "NEXT_TURN: ターン " + game.getCurrentTurn() + "です。\n" + playResult;
+                if(game.getIsEnd()){
+                    return "GAME_END: 相手の勝利ターン " + game.getCurrentTurn() + "です。\n" + playResult;
+                }else{
+                    return "NEXT_TURN: ターン " + game.getCurrentTurn() + "です。\n" + playResult;
+                }
+                
             }
             
 
@@ -161,11 +171,14 @@ public class HanahudaGameLogic {
     
     public void endGame(){
         //ゲーム終了処理
+        game.setIsEnd(true);
+        System.out.println("GAME_END: endGameだけど");
         //リザルトを返してゲームリセット
     }
 
     public boolean isGameFinished() {
-        return game.isBothHandEmpty();
+        //System.out.println("game.isBothHandEmpty()="+game.isBothHandEmpty()+" game.getIsEnd()="+game.getIsEnd());
+        return game.isBothHandEmpty() || game.getIsEnd();
     }
     
     

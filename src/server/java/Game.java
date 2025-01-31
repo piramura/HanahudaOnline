@@ -8,6 +8,7 @@ public class Game {
     private int currentPlayerIndex;
     private int playCount;
     private int currentTurn;
+    private boolean isEnd;
 
     public Game(Deck deck) {
         this.deck = deck;
@@ -16,6 +17,7 @@ public class Game {
         this.currentPlayerIndex = 0;
         this.currentTurn = 0;//初期化するときに0か1かランダム
         this.playCount = 0;
+        this.isEnd = false;
     }
     // 初期化メソッド
     public void initializeGame(HanahudaGameLogic logic) {
@@ -103,7 +105,12 @@ public class Game {
     public void incrementPlayCount() {
         this.playCount++;
     }
-
+    public boolean getIsEnd(){
+        return isEnd;
+    }
+    public void setIsEnd(boolean isEnd){
+        this.isEnd = isEnd;
+    }
     //両方の手札がからならtrueを返す関数。
     public boolean isBothHandEmpty(){
         return players.get(0).getHand().isEmpty() && players.get(1).getHand().isEmpty();

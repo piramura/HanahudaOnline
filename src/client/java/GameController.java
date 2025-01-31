@@ -21,6 +21,9 @@ public class GameController {
     private boolean isActive = false;
     private int playCount;
     private boolean isKoikoi = false;
+    private boolean isEnd;
+
+    
 
     public List<Integer> getField() {
         return field;
@@ -71,6 +74,12 @@ public class GameController {
 
     public void setIsKoikoi(boolean isKoikoi) {
         this.isKoikoi = isKoikoi;
+    }
+    public void setIsEnd(boolean isEnd){
+        this.isEnd = isEnd;
+    }
+    public boolean getIsEnd(){
+        return isEnd;
     }
 
     private PlayerInfo parsePlayerInfo(String playerInfoString) {
