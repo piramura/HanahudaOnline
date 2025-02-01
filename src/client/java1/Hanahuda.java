@@ -40,7 +40,7 @@ public class Hanahuda extends JFrame {
         frame.setLayout(null);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
-        Title TitlePanel = new Title(frame);
+        C_Title TitlePanel = new C_Title(frame);
     }
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {

@@ -38,35 +38,37 @@ public class HanahudaGameLogic {
         System.out.println("DEBUG: game.getPlayCount()=="+game.getPlayCount());
         
         if (game.getPlayCount() >= 2) {
-            System.out.println("DEBUG: game.getPlayCount() >= 2");
-            System.out.println("DEBUG: playerIndex"+playerIndex);
-            int tmpPlayerid;
-            if(playerIndex==2){
-                tmpPlayerid = 1;
-            }else{
-                tmpPlayerid = 0;
+            int tmpPlayerId = (playerIndex == 2) ? 1 : 0; // 相手プレイヤーのIDを取得
+            Player currentPlayer = game.getPlayers().get(tmpPlayerId);
+
+            // **前回の得点を保存**
+            List<String> previousRoles = new ArrayList<>(currentPlayer.getAchievedRoles());
+
+            // **現在の得点を計算**
+            RoleResult roleResult = new RoleResult(-1, List.of(""), -1);
+            try {
+                roleResult = RoleChecker.checkRules(currentPlayer);
+            } catch (Exception e) {
+                System.err.println("ERROR: RoleResult でエラー");
             }
-            System.out.println("DEBUG: game.getPlayers().get(playerIndex)"+game.getPlayers().get(tmpPlayerid));
-            RoleResult roleResult = new RoleResult(-1,List.of(""),-1);
-            try{
-                roleResult = RoleChecker.checkRules(game.getPlayers().get(tmpPlayerid));
-            }catch(Exception e){
-                System.err.println("ERROR: RoleResultでエラー");
-            }
-            
-            System.out.println("DEBUG: roleResult "+roleResult);
-            if (!roleResult.getAchievedRoles().isEmpty()) {
-                //game.getPlayers().get(playerIndex).addScore(roleResult.getTotalScore());
+
+            List<String> currentRoles = roleResult.getAchievedRoles();
+            currentPlayer.setAchievedRoles(currentRoles);
+
+            System.out.println("DEBUG: 現在の役の成立結果: " + currentRoles);
+            // **こいこい選択判定**
+            if (!currentRoles.isEmpty() && (!previousRoles.containsAll(currentRoles) || currentPlayer.isKoiKoi())) {
+                currentPlayer.setKoiKoi(true); // こいこい状態を更新
                 return "KOIKOI_WAITING: 役が成立しました。「こいこい」を選択してください。\n" +
-                       "役: " + roleResult.getAchievedRoles() + "\n" +
-                       "得点: " + roleResult.getTotalScore();
-            }else{
-                if(game.getIsEnd()){
-                    return "GAME_END: 相手の勝利ターン " + game.getCurrentTurn() + "です。\n" + playResult;
-                }else{
-                    return "NEXT_TURN: ターン " + game.getCurrentTurn() + "です。\n" + playResult;
+                    "役: " + roleResult.getAchievedRoles() + "\n" +
+                    "得点: " + roleResult.getTotalScore();
+            } else {
+                currentPlayer.setKoiKoi(false); // こいこいを解除
+                if (game.getIsEnd()) {
+                    return "GAME_END: 相手の勝利。ターン " + game.getCurrentTurn() + " です。\n" + playResult;
+                } else {
+                    return "NEXT_TURN: ターン " + game.getCurrentTurn() + " です。\n" + playResult;
                 }
-                
             }
             
 
@@ -165,10 +167,13 @@ public class HanahudaGameLogic {
     //これらはパブリックで管理される。
     public void nextTurn() {
         System.out.println("DEBUG:  HanahudaGameLogicでnextTurn()が呼ばれました");
-        game.nextTurn();
+        System.out.println("game.getIsEnd()=="+game.getIsEnd());
+        if(game.getIsEnd()){
+            System.out.println("GAME_END :ゲーム終了");
+        }else{
+            game.nextTurn();
+        }
     }
-    
-    
     public void endGame(){
         //ゲーム終了処理
         game.setIsEnd(true);

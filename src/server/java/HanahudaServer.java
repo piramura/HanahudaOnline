@@ -29,6 +29,8 @@ public class HanahudaServer {
         server.createContext("/session/terminate", new TerminateSessionHandler(gameSessionManager));
         server.createContext("/game/next", new NextTurnHandler(gameSessionManager));
         server.createContext("/game/player", new PlayerHandler(gameSessionManager));
+        server.createContext("/game/result", new GameResultHandler(gameSessionManager));
+
 
 
         server.setExecutor(null);
@@ -347,6 +349,41 @@ class PlayerHandler implements HttpHandler {
                               ", Icon: " + opponentInfo.getIconNum() +
                               ", Level: " + opponentInfo.getLevel();
             sendResponse(exchange, 200, response);
+        } catch (Exception e) {
+            sendResponse(exchange, 500, "ERROR: " + e.getMessage());
+        }
+    }
+
+    private void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
+        exchange.sendResponseHeaders(statusCode, response.getBytes().length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
+    }
+}
+class GameResultHandler implements HttpHandler {
+    private GameSessionManager gameSessionManager;
+
+    public GameResultHandler(GameSessionManager gameSessionManager) {
+        this.gameSessionManager = gameSessionManager;
+    }
+
+    @Override
+    public void handle(HttpExchange exchange) throws IOException {
+        if (!"GET".equals(exchange.getRequestMethod())) {
+            exchange.sendResponseHeaders(405, -1); // Method Not Allowed
+            return;
+        }
+
+        String sessionId = exchange.getRequestHeaders().getFirst("Session-ID");
+        if (sessionId == null || sessionId.isEmpty()) {
+            sendResponse(exchange, 400, "ERROR: セッションIDが提供されていません");
+            return;
+        }
+
+        try {
+            String result = gameSessionManager.getGameResult(sessionId);
+            sendResponse(exchange, 200, result);
         } catch (Exception e) {
             sendResponse(exchange, 500, "ERROR: " + e.getMessage());
         }

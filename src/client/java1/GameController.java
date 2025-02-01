@@ -22,6 +22,15 @@ public class GameController {
     private int playCount;
     private boolean isKoikoi = false;
     private boolean isEnd;
+    private String resultData;
+
+    public void setResult(String result) {
+        this.resultData = result;
+    }
+
+    public String getResultFromController() {
+        return resultData;
+    }
 
     
 

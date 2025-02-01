@@ -32,6 +32,15 @@ public class GameSessionManager {
         int opponentId = (playerId == 1) ? 2 : 1; // 2人用ゲームを想定
         return playerInfoMap.get(opponentId);
     }
+    public synchronized String getGameResult(String sessionId) {
+        Game game = gamelogic.getGame();
+        Integer playerNumber = clientSessions.get(sessionId);
+        if (playerNumber == null) {
+            return "ERROR: セッションが見つかりません";
+        }
+        return gamelogic.determineWinner();
+    }
+    
     
     //プレイヤー情報を追加
     public synchronized void setPlayerInfo(int playerId, String playerName, int iconNum, int level) {

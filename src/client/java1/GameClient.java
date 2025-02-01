@@ -31,8 +31,6 @@ public class GameClient {
     
         return builder.build();
     }
-    
-    
     // セッションIDを取得
     public void initializeSession(String passphrase) throws Exception {
         HttpRequest request = HttpRequest.newBuilder()
@@ -111,39 +109,19 @@ public class GameClient {
         HttpRequest request = buildRequest("/game/state", "GET", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
-            // System.out.println("ゲーム状態: " + response.body());
-            //
-            controller.parseGameState(response.body());
+            String responseBody = response.body(); // レスポンスの内容を取得
+
+            if (responseBody.startsWith("GAME_END")) { // 修正: response → responseBody
+                controller.setIsEnd(true);
+                System.out.println("controller.getIsEnd(): " + controller.getIsEnd());
+            } else {
+                controller.parseGameState(responseBody); // 修正: response → responseBody
+            }
         } else {
             throw new RuntimeException("ゲーム状態取得エラー: " + response.statusCode());
         }
     }
-    // // カードプレイ
-    // public void playCard(int cardInfo,int playerId,int fieldCardId) throws Exception {//UIをブロックしてる。
-
-    //     String message = String.format("PLAY_CARD:%d:%d:%d", cardInfo, fieldCardId,playerId); // メッセージに PlayerID を追加
-    //     HttpRequest request = buildRequest("/game/play", "POST", message);
-    //     HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-    //     System.out.println("playCard: " + response.body());
-    //     if (response.statusCode() == 200) {
-    //         System.out.println("カードプレイ成功: " + response.body());
-    //         String responseBody = response.body();
-    //         // レスポンス内容に応じて処理を分岐
-    //         if (responseBody.startsWith("CONTINUE_TURN")){
-    //             continueYourTurn();
-    //         }else if (responseBody.startsWith("KOIKOI_WAITING")) {
-    //             handleKoiKoiSelection(responseBody);
-    //         } else if (responseBody.startsWith("NEXT_TURN")) {
-    //             handleNextTurn(responseBody);
-    //         } else if (responseBody.startsWith("GAME_END")) {
-    //             handleGameEnd(responseBody);
-    //         } else {
-    //             throw new RuntimeException("未知のレスポンス形式: " + responseBody);
-    //         }
-    //     } else {
-    //         throw new RuntimeException("カードプレイエラー: " + response.statusCode());
-    //     }
-    // }
+    //非同期処理版
     public void fetchGameStateAsync() {
         HttpRequest request;
     
@@ -206,6 +184,7 @@ public class GameClient {
     private void continueYourTurn(){
         //もう一枚処理してって命令を送る。なんでも書いていいよ
         try{
+            System.out.println("continueYourTurn処理中");
             fetchGameState();
         }catch(Exception e){
             System.err.println("continueYourTurnの fetchGameState()でEROOR");
@@ -255,11 +234,6 @@ public class GameClient {
 
     private void handleNextTurn(String responseBody) {
         System.out.println("次のターンに進みます: " + responseBody);
-        // try{
-        //     fetchGameState();
-        // }catch(Exception e){
-        //     System.err.println("handleNextTurnの fetchGameState()でEROOR");
-        // }
         //次のターンへ移るアニメーションsendNextTurnMessage(NEXT_TURN);
         try{
             sendNextTurnMessage("NEXT_TURN");
@@ -283,5 +257,18 @@ public class GameClient {
         } else {
             System.err.println("切断通知エラー: " + response.statusCode());
         }
-    }   
+    }
+    public String getResultFromServer() throws Exception {
+        HttpRequest request = buildRequest("/game/result", "GET", null);
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
+    
+        if (response.statusCode() == 200) {
+            String resultData = response.body();
+            controller.setResult(resultData);
+            return resultData;
+        } else {
+            throw new RuntimeException("ゲーム結果取得エラー: " + response.statusCode());
+        }
+    }
+    
 }
