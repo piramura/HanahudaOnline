@@ -10,26 +10,26 @@ import java.net.InetSocketAddress;
 // import java.net.InetSocketAddress;
 
 public class HanahudaServer {
-    private static ClientSessionManager clientSessionManager;
     private static GameSessionManager gameSessionManager;
 
     public static void main(String[] args) throws Exception {
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "10030"));
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         // ClientSessionManagerを作成し、GameSessionManagerに渡す
-        ClientSessionManager clientSessionManager = new ClientSessionManager();
-        GameSessionManager gameSessionManager = GameSessionManager.getInstance(clientSessionManager);
+        GameSessionManager gameSessionManager = new GameSessionManager();
 
         // エンドポイント設定
         server.createContext("/game/play", new PlayCardHandler(gameSessionManager));
         server.createContext("/game/state", new GameStateHandler(gameSessionManager));
         server.createContext("/game/ready", new ReadyHandler(gameSessionManager));
-        server.createContext("/session", new SessionHandler(clientSessionManager));
+        server.createContext("/session", new SessionHandler(gameSessionManager));
         server.createContext("/game/playerId", new PlayerIdHandler(gameSessionManager));
         server.createContext("/session/terminate", new TerminateSessionHandler(gameSessionManager));
         server.createContext("/game/next", new NextTurnHandler(gameSessionManager));
         server.createContext("/game/player", new PlayerHandler(gameSessionManager));
         server.createContext("/game/result", new GameResultHandler(gameSessionManager));
+        server.createContext("/game/computerTurn", new ComputerTurnHandler(gameSessionManager));
+
 
 
 
@@ -39,8 +39,7 @@ public class HanahudaServer {
     }
     // ゲームセッションを初期化するメソッド
     public static void resetGameSession() {
-        clientSessionManager = new ClientSessionManager();
-        gameSessionManager = GameSessionManager.getInstance(clientSessionManager);
+        GameSessionManager gameSessionManager = new GameSessionManager();
         System.out.println("ゲームセッションがリセットされました。次のプレイヤーを待っています...");
     }
     
@@ -116,40 +115,53 @@ class ReadyHandler implements HttpHandler {
 }
 
 class SessionHandler implements HttpHandler {
-    private ClientSessionManager sessionManager;
+    public GameSessionManager gameSessionManager;
     
     private static final String SECRET_PASSPHRASE = System.getenv().getOrDefault("GAME_SECRET", "default_passphrase");
 
-    public SessionHandler(ClientSessionManager sessionManager) {
-        this.sessionManager = sessionManager;
+    public SessionHandler(GameSessionManager gameSessionManager) {
+        this.gameSessionManager = gameSessionManager;
     }
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        // 合言葉をリクエストボディから取得
-        String passphrase = new String(exchange.getRequestBody().readAllBytes());
-        System.out.println("受信した合言葉: " + passphrase);
-        System.out.println("正しい合言葉: " + SECRET_PASSPHRASE);
-        // 合言葉を検証
-        if (!SECRET_PASSPHRASE.equals(passphrase)) {
-            String response = "ERROR: 無効な合言葉";
-            exchange.sendResponseHeaders(403, response.getBytes().length); // Forbidden
-            try (OutputStream os = exchange.getResponseBody()) {
-                os.write(response.getBytes());
-            }
+        // リクエストボディを読み取り、空白をトリム
+        String body = new String(exchange.getRequestBody().readAllBytes()).trim();
+        String[] parts = body.split(":");
+
+        // 形式チェック
+        if (parts.length < 1) {
+            sendResponse(exchange, 400, "ERROR: 無効なリクエスト形式");
             return;
         }
+
+        String passphrase = parts[0].trim();
+        boolean isBotMatch = (parts.length > 1) && "BOT".equalsIgnoreCase(parts[1].trim());
+
+        // パスフレーズ認証
+        if (!SECRET_PASSPHRASE.equals(passphrase)) {
+            sendResponse(exchange, 403, "ERROR: 無効な合言葉");
+            return;
+        }
+
         // セッションIDを発行
         String sessionId = java.util.UUID.randomUUID().toString();
-        sessionManager.registerSession(sessionId);
-        System.out.println("セッションIDを発行: " + sessionId);
-        exchange.sendResponseHeaders(200, sessionId.getBytes().length);
+        gameSessionManager.addClient(sessionId, isBotMatch); // ここでBOT戦かどうかも登録
+
+        System.out.println("セッションIDを発行: " + sessionId + " (BOT戦: " + isBotMatch + ")");
+
+        
+        sendResponse(exchange, 200, sessionId);
+    }
+
+    private void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
+        exchange.sendResponseHeaders(statusCode, response.getBytes().length);
         try (OutputStream os = exchange.getResponseBody()) {
-            os.write(sessionId.getBytes());
+            os.write(response.getBytes());
         }
     }
-    
 }
+
 class PlayerIdHandler implements HttpHandler {
     private GameSessionManager gameSessionManager;
 
@@ -253,6 +265,7 @@ class NextTurnHandler implements HttpHandler {
         if ("KOIKOI".equals(body) || "NEXT_TURN".equals(body)) {
             System.out.println("[DEBUG] 次のターンへ進めます。");
             gameSessionManager.nextTurn();
+            
             response = "NEXT_TURN: NEXT_TURN";
             exchange.sendResponseHeaders(400, response.getBytes().length);
             try (OutputStream os = exchange.getResponseBody()) {
@@ -261,6 +274,7 @@ class NextTurnHandler implements HttpHandler {
             return;
         } else if ("END".equals(body)) {
             gameSessionManager.endGame();
+            System.out.println("response = GAME_END: ゲーム終了");
             response = "GAME_END: ゲーム終了";
             exchange.sendResponseHeaders(400, response.getBytes().length);
             try (OutputStream os = exchange.getResponseBody()) {
@@ -340,7 +354,15 @@ class PlayerHandler implements HttpHandler {
         try {
             int playerId = gameSessionManager.getPlayerId(sessionId);
             PlayerInfo playerInfo = gameSessionManager.getPlayerInfo(playerId);
+            if (playerInfo == null) {
+                sendResponse(exchange, 500, "ERROR: プレイヤー情報が見つかりません");
+                return;
+            }
             PlayerInfo opponentInfo = gameSessionManager.getOpponentInfo(playerId);
+            if (opponentInfo == null) {
+                sendResponse(exchange, 500, "ERROR: 対戦相手の情報が見つかりません");
+                return;
+            }
 
             String response = "Your Info - Name: " + playerInfo.getPlayerName() +
                               ", Icon: " + playerInfo.getIconNum() +
@@ -370,6 +392,7 @@ class GameResultHandler implements HttpHandler {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
+        System.out.println("GameResultHandler");
         if (!"GET".equals(exchange.getRequestMethod())) {
             exchange.sendResponseHeaders(405, -1); // Method Not Allowed
             return;
@@ -382,6 +405,7 @@ class GameResultHandler implements HttpHandler {
         }
 
         try {
+            System.out.println("リザルトを返す");
             String result = gameSessionManager.getGameResult(sessionId);
             sendResponse(exchange, 200, result);
         } catch (Exception e) {
@@ -391,6 +415,28 @@ class GameResultHandler implements HttpHandler {
 
     private void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
         exchange.sendResponseHeaders(statusCode, response.getBytes().length);
+        try (OutputStream os = exchange.getResponseBody()) {
+            os.write(response.getBytes());
+        }
+    }
+}
+class ComputerTurnHandler implements HttpHandler {
+    private GameSessionManager gameSessionManager;
+
+    public ComputerTurnHandler(GameSessionManager gameSessionManager) {
+        this.gameSessionManager = gameSessionManager;
+    }
+
+    @Override
+    public void handle(HttpExchange exchange) throws IOException {
+        if (!"POST".equals(exchange.getRequestMethod())) {
+            exchange.sendResponseHeaders(405, -1);
+            return;
+        }
+
+        gameSessionManager.processComputerTurn();
+        String response = "コンピュータのターンが処理されました";
+        exchange.sendResponseHeaders(200, response.getBytes().length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes());
         }

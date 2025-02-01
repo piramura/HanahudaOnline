@@ -140,11 +140,9 @@ public class Deck{
 
         //9
         Card card32 = new Card(cardId++,Card.Month.SEPTEMBER, Card.Point.HIKARI);
-        card32.addRole("五光", 10); // 光札の役
         card32.addRole("月見で一杯", 5);
         card32.addRole("花見で一杯", 5);
-        card32.addRole("四光", 8);
-        card32.addRole("雨四光", 7);
+        card32.addRole("タネ", 1); 
         cards.add(card32);
         Card card33 = new Card(cardId++,Card.Month.SEPTEMBER, Card.Point.TANE);
         card33.addRole("青短", 5); 

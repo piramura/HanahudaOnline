@@ -1,35 +1,45 @@
-import java.util.HashMap;
-import java.util.Map;
-
+import java.util.*;
 public class GameSessionManager {
-    private static GameSessionManager instance;
+
     private HanahudaGameLogic gamelogic = new HanahudaGameLogic();
-    private ClientSessionManager clientSessionManager; // セッション管理用
     private Map<String, Integer> clientSessions = new HashMap<>(); // セッションIDとプレイヤー番号
     private Map<String, Boolean> clientReadyStates = new HashMap<>(); // クライアントの準備状態
+    private Set<String> botSessions = new HashSet<>(); // BOT戦を管理するセッションセット
+
     private boolean gameStarted = false;
+
+    // **BOT戦のセッションを登録**
+    public synchronized void startBotMatch(String sessionId) {
+        botSessions.add(sessionId);
+        clientSessions.put(sessionId, 1); // プレイヤー1として登録
+        clientSessions.put("BOT", 2); // BOTをプレイヤー2として登録
+        clientReadyStates.put(sessionId, true);
+        clientReadyStates.put("BOT", true);
+        System.out.println("BOT戦のセッションを登録しました: " + sessionId);
+    }
+    // セッションIDが有効か確認
+    public boolean isValidSession(String sessionId) {
+        return clientSessions.containsKey(sessionId);
+    }
+    // **BOT戦かどうかを判定**
+    public boolean isBotMatch(String sessionId) {
+        return botSessions.contains(sessionId);
+    }
+
 
     private int maxClients = 2;
     //プレイヤー情報を保持するマップ
     private Map<Integer, PlayerInfo> playerInfoMap = new HashMap<>();
-    
-    public GameSessionManager(ClientSessionManager clientSessionManager) {
-        this.clientSessionManager = clientSessionManager;
-        this.clientSessions = clientSessionManager.getSessions();
-        System.out.println("初期化時のセッション: " + clientSessions);
-    }
-    public static synchronized GameSessionManager getInstance(ClientSessionManager clientSessionManager) {
-        if (instance == null) {
-            instance = new GameSessionManager(clientSessionManager);
-        }
-        return instance;
-    }
     public synchronized PlayerInfo getPlayerInfo(int playerId) {
         return playerInfoMap.get(playerId);
     }
     
     public synchronized PlayerInfo getOpponentInfo(int playerId) {
         int opponentId = (playerId == 1) ? 2 : 1; // 2人用ゲームを想定
+        if (!playerInfoMap.containsKey(opponentId)) {
+            System.out.println("対戦相手が見つかりません: playerId=" + playerId);
+            return new PlayerInfo("Computer", 0, 1); // 仮のデフォルトデータを返す
+        }
         return playerInfoMap.get(opponentId);
     }
     public synchronized String getGameResult(String sessionId) {
@@ -49,25 +59,30 @@ public class GameSessionManager {
         System.out.println("Player info updated: " + info);
     }
     
-    public synchronized String addClient(String sessionId) {
-        if (!clientSessionManager.isValidSession(sessionId)) {
-            return "ERROR: セッションが無効です";
+    public synchronized String addClient(String sessionId, boolean isBotMatch) {
+        if (clientSessions.size() >= maxClients && !isBotMatch) {
+            return "FULL"; // 通常のオンライン対戦では満員チェック
         }
-        if (clientSessions.size() >= maxClients) {
-            return "FULL"; // サーバーが満員の場合
+    
+        if (isBotMatch) {
+            startBotMatch(sessionId);
+            return "BOT_MATCH_STARTED";
         }
+    
         int playerNumber = clientSessions.size() + 1;
         clientSessions.put(sessionId, playerNumber);
         clientReadyStates.put(sessionId, false); // 初期状態は未準備
-        System.err.println("プレイヤー " + playerNumber + " が接続しました。");
+        System.out.println("プレイヤー " + playerNumber + " が接続しました。");
+    
         return "PLAYER_NUMBER:" + playerNumber;
     }
+    
     public synchronized String setClientReady(String sessionId) {
         if (!clientSessions.containsKey(sessionId)) {
             return "ERROR: セッションが見つかりません";
         }
         clientReadyStates.put(sessionId, true);
-        if (areAllClientsReady()) {
+        if (areAllClientsReady() || isBotMatch(sessionId)) {
             startGame(sessionId); // 全員準備完了したらゲーム開始
             return "GAME_STARTED";
         }
@@ -100,7 +115,7 @@ public class GameSessionManager {
         System.out.println("受信したセッションID: " + sessionId);
         System.out.println("現在登録されているセッション: " + clientSessions);
         
-        Integer playerNumber = clientSessionManager.getPlayerIndex(sessionId);
+        Integer playerNumber = clientSessions.get(sessionId);
         if (playerNumber == null) {
             return "ERROR: セッションが見つかりません";
         }
@@ -173,7 +188,7 @@ public class GameSessionManager {
         gameState.append("現在のターン: ").append(game.getCurrentTurn()).append("\n");
         gameState.append("\n");
         
-        //System.out.println("DEBUG ゲーム状態: " + gameState);
+        System.out.println("DEBUG ゲーム状態: " + gameState);
         return gameState.toString();
     }
     public synchronized int getPlayerId(String sessionId) {
@@ -185,7 +200,6 @@ public class GameSessionManager {
     }
     public synchronized boolean removeSession(String sessionId) {
         Integer playerNumber = clientSessions.remove(sessionId); // セッションを削除
-        clientSessionManager.removeSession(sessionId);
         if (playerNumber != null) {
             System.out.println("セッションID " + sessionId + " のプレイヤー " + playerNumber + " を削除しました。");
             // ➡️ すべてのセッションが削除された場合
@@ -214,5 +228,8 @@ public class GameSessionManager {
     }
     public void endGame(){
         gamelogic.endGame();
+    }
+    public void processComputerTurn(){
+        System.out.println("コンピュータの処理中");
     }
 }

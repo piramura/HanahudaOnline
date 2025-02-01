@@ -29,7 +29,7 @@ public class RoleChecker {
                 // 雨札を含む光札（雨入り四光）の判定
                 if (role.getName().equals("雨四光")) {
                     rainyLightCount++; // 雨札を含む光札のカウント
-                    }
+                }
 
                 // 花見で一杯の判定（特定の役名で判定）
                 if (role.getName().equals("花見で一杯")) {
@@ -84,7 +84,7 @@ public class RoleChecker {
             totalScore += rainyLightCount > 0 ? 7 : 8; // 四光
             achievedRoles.add(rainyLightCount > 0 ? "雨入り四光" : "四光");
             achievedScores.add(rainyLightCount > 0 ? 7 : 8);
-        } else if (lightCount == 3) {
+        } else if (lightCount - rainyLightCount == 3) {
             totalScore += 5; // 三光
             achievedScores.add(5);
             achievedRoles.add("三光");

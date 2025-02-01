@@ -117,7 +117,7 @@ public class Game {
     }
     public void nextTurn() {
         if (isBothHandEmpty()) {
-            endGame();
+            isEnd = true;
         } else {
             playCount = 0; // プレイ回数をリセット
             System.out.println("次のターンへ。現在のプレイヤー: " + currentTurn);
@@ -127,10 +127,10 @@ public class Game {
         }
     }
     
-    private void endGame() {
-        System.out.println("ゲーム終了！勝者を判定します...");
-        // ゲーム終了処理を記述（勝者の判定やリセット処理など）
-    }
+    // private void endGame() {
+    //     System.out.println("GAME_END: 勝者を判定します...");
+    //     // ゲーム終了処理を記述（勝者の判定やリセット処理など）
+    // }
     // デッキの中身を出力する関数
     public void printDeckContents() {
         System.out.println("現在のデッキの中身:");
