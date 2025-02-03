@@ -123,7 +123,7 @@ class V_Lobby extends JPanel {
                 g.drawImage(imageLoader.getRoleIcon(), 1835, 100, 77, 77, this);
                 /* プレイヤーアイコンの表示*/
                 g.drawImage(imageLoader.getCard(AppPreferences.getInt("プレイヤーアイコン", 0)), 60, 10, 114, 153, this);
-                g.drawImage(imageLoader.getPlayerInfo(), 180, 450, 114, 153, this);
+                g.drawImage(imageLoader.getPlayerInfo(), 180, 10, 450, 153, this);
                 /* インプットフィールドの表示*/
                 playerNameInputField.setBounds(185, 50, 200, 30);
                 if(!this.isAncestorOf(playerNameInputField)) {

@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.List;
 //場札を管理する。場に出たカードや場札から取ったカードを操作する。
 public class Field {
     private ArrayList<Card> cards; // 場にあるカード
@@ -6,7 +7,6 @@ public class Field {
     public Field() {
         cards = new ArrayList<>();
     }
-
     public void addCard(Card card) {
         cards.add(card);
     }
@@ -55,16 +55,16 @@ public class Field {
     }
         
     
-    public boolean isThreeCards(Card card){
+    private boolean isThreeCards(Card card){
         int count = 0;
         for (Card c : cards) {
             if (c.getMonth() == card.getMonth()) {
                 count++;
             }
         }
-        return count == 3; // 2枚の場合に true を返す一枚はすでに取ってるから
+        return count >= 2; // 2枚の場合に true を返す一枚はすでに取ってるから
     }
-    public ArrayList<Card> takeCardsByMonth(Card.Month month) {
+    private ArrayList<Card> takeCardsByMonth(Card.Month month) {
         ArrayList<Card> takenCards = new ArrayList<>();
         
         // cards リストをループして一致する月のカードを取得・削除
@@ -78,4 +78,20 @@ public class Field {
 
         return takenCards;
     }
+    public void playCardOnField(Player player, Card playedCard, int fieldCardId) {
+        if (fieldCardId == -1) {
+            addCard(playedCard);
+        } else {
+            Card fieldCard = takeCardById(fieldCardId);
+            if (!isThreeCards(fieldCard)) {
+                player.captureCard(fieldCard);
+                player.captureCard(playedCard);
+            } else {
+                List<Card> takenCards = takeCardsByMonth(fieldCard.getMonth());
+                for (Card card : takenCards) player.captureCard(card);
+                player.captureCard(playedCard);
+            }
+        }
+    }
+    
 }

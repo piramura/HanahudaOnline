@@ -48,6 +48,13 @@ public class Player {
         return hand.remove(index);
         //手札からカードを出すときに使う。indexで管理することで選べるようにしようとした。
     }
+    public Card removeCaptureCardindex(int index) {
+        if (index < 0 || index >= captures.size()) {
+            throw new IllegalArgumentException("不正なカードインデックス: " + index);
+        }
+        return captures.remove(index);
+        //手札からカードを出すときに使う。indexで管理することで選べるようにしようとした。
+    }
 
     public ArrayList<Card> getHand() {
         return hand;

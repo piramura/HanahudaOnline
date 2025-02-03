@@ -15,6 +15,7 @@ public class GameSessionManager {
         clientSessions.put("BOT", 2); // BOTをプレイヤー2として登録
         clientReadyStates.put(sessionId, true);
         clientReadyStates.put("BOT", true);
+        gamelogic.setBotMode(true);
         System.out.println("BOT戦のセッションを登録しました: " + sessionId);
     }
     // セッションIDが有効か確認
@@ -188,7 +189,7 @@ public class GameSessionManager {
         gameState.append("現在のターン: ").append(game.getCurrentTurn()).append("\n");
         gameState.append("\n");
         
-        System.out.println("DEBUG ゲーム状態: " + gameState);
+        //System.out.println("DEBUG ゲーム状態: " + gameState);
         return gameState.toString();
     }
     public synchronized int getPlayerId(String sessionId) {

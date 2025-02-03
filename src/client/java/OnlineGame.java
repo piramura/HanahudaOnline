@@ -424,7 +424,7 @@ class OnlineGame extends JPanel {
         frame.setContentPane(panel);
         frame.revalidate();
         /* ターン更新タイマー*/
-        Timer updateTurnTimer = new Timer(256, new ActionListener() {
+        Timer updateTurnTimer = new Timer(16, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try{

@@ -55,7 +55,7 @@ public class Game {
     private boolean hasFourSameMonthCards(List<Card> cards) {
         int[] monthCounts = new int[12];
         for (Card card : cards) {
-            int month = (card.getId() - 1) / 4;
+            int month = card.getMonth().ordinal();
             monthCounts[month]++;
             if (monthCounts[month] >= 4) {
                 return true;

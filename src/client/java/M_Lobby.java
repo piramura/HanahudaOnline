@@ -182,11 +182,11 @@ class M_Lobby extends JPanel {
     public void Online() {
         AppPreferences.putString("プレイヤー名", c_Lobby.getPlayerNameInputField().getText());
         gameController = new GameController();
-        // client = new GameClient("https://hanahudaonline.onrender.com");
+        // client = new GameClient("https://hanahudaonline.onrender.com"/);
         client = new GameClient("http://localhost:10030");
         client.setGameController(gameController);
         gameController.setGameClient(client);
-        gameController.setBotMode(true);
+        gameController.setBotMode(false);
         System.out.println(gameController.getBotMode());
         gameController.startOnlineMatch();
         startTimer();
@@ -194,7 +194,7 @@ class M_Lobby extends JPanel {
     public void Computer(){
         AppPreferences.putString("プレイヤー名", c_Lobby.getPlayerNameInputField().getText());
         gameController = new GameController();
-        // client = new GameClient("https://hanahudaonline.onrender.com");
+        // client = new GameClient("https://hanahudaonline.onrender.com"/);
         client = new GameClient("http://localhost:10030");
         client.setGameController(gameController);
         gameController.setGameClient(client);
@@ -209,7 +209,7 @@ class M_Lobby extends JPanel {
         /* セッション中*/
         isSession = true;
         c_Lobby.setTimeLabel();
-        uiTimer = new Timer(64, e -> {
+        uiTimer = new Timer(500, e -> {
             int elapsedSeconds = gameController.getElapsedTime();
             int minutes = elapsedSeconds / 60;
             int seconds = elapsedSeconds % 60;
@@ -234,7 +234,6 @@ class M_Lobby extends JPanel {
         });
         uiTimer.start();
     }
-    
 
     public void fadeOutTimer() {
         Timer fadeTimer = new Timer(16, new ActionListener() {

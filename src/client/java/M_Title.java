@@ -46,7 +46,6 @@ public class M_Title extends JPanel {
     private JSlider slider2;
     private ArrayList<Ball> balls = new ArrayList<>();
     private Random random = new Random();
-    
     /* コンストラクタでM_Titleの設定を行います。*/
     public M_Title(C_Title c_Title) {
         /* 初期化*/
