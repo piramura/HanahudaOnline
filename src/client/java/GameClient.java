@@ -3,12 +3,21 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
+
+
 
 public class GameClient {
     private static final HttpClient CLIENT = HttpClient.newHttpClient();
     private String sessionId;
     private final String serverUrl; // サーバーURLをフィールドに追加
     private GameController controller;
+    private static final int TURN_DELAY = 3000; // **ターン移行の遅延（3秒）**
+private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
     // コンストラクタでURLを受け取る
     public GameClient(String serverUrl) {
         this.serverUrl = serverUrl; // デフォルト値を設定
@@ -254,14 +263,16 @@ public class GameClient {
 
     private void handleNextTurn(String responseBody) {
         System.out.println("次のターンに進みます: " + responseBody);
-        //次のターンへ移るアニメーションsendNextTurnMessage(NEXT_TURN);
-        try{
-            sendNextTurnMessage("NEXT_TURN");
-            // OnlineGame.updateState();
-        }catch(Exception e){
-            System.err.println("sendNextTurnMessage(\"NEXT_TURN\")でエラー");
-        }
-        ;
+    
+        // **遅延を入れて次のターンへ**
+        scheduler.schedule(() -> {
+            try {
+                sendNextTurnMessage("NEXT_TURN");
+                System.out.println("次のターンが開始されました！");
+            } catch (Exception e) {
+                System.err.println("sendNextTurnMessage(\"NEXT_TURN\") でエラー: " + e.getMessage());
+            }
+        }, TURN_DELAY, TimeUnit.MILLISECONDS);
     }
 
     private void handleGameEnd(String responseBody) {
