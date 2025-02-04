@@ -48,6 +48,12 @@ public class ImageLoader {
     private Image blackWindow;
     private Image playerInfo;
     private BufferedImage[][] card = new BufferedImage[12][4];
+    private Image stage;
+    private Image cardBack;
+    private Image moveCard;
+    private Image returnLobbyButton;
+    private Image darkenScreen;
+    private BufferedImage[][] rotateCard = new BufferedImage[12][4];
     public ImageLoader() {
         this.wall = new ImageIcon("画像/壁.png").getImage();
         this.rightDoor = new ImageIcon("画像/右扉.png").getImage();
@@ -68,12 +74,27 @@ public class ImageLoader {
         this.roleIcon = new ImageIcon("画像/役表アイコン.png").getImage();
         this.blackWindow = new ImageIcon("画像/黒背景.png").getImage();
         this.playerInfo = new ImageIcon("画像/プレイヤー情報.png").getImage();
+        this.stage = new ImageIcon("画像/戦闘背景.png").getImage();
+        this.cardBack = new ImageIcon("札絵柄/花札裏面.jpg").getImage();
+        this.returnLobbyButton = new ImageIcon("画像/ロビーに戻る.png").getImage();
+        this.darkenScreen = new ImageIcon("画像/うっすら.png").getImage();
         /* 1月1.pngから12月4.pngまでを読み込む*/
         for(int month = 0; month < 12; month++){
             for(int day = 0; day < 4; day++) {
                 try{
                     String filePath = "札絵柄/" + (month + 1) + "月" + (day + 1) + ".png";
                     this.card[month][day] = ImageIO.read(new File(filePath));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        /* 1月1.pngから12月4.pngまでを読み込む*/
+        for(int month = 0; month < 12; month++){
+            for(int day = 0; day < 4; day++) {
+                try{
+                    String filePath = "札絵柄反対向き/" + (month + 1) + "月" + (day + 1) + ".png";
+                    this.rotateCard[month][day] = ImageIO.read(new File(filePath));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -158,5 +179,33 @@ public class ImageLoader {
 
     public Image getCard(int cardId) {
         return card[cardId / 4][cardId % 4];
+    }
+
+    public Image getRotateCard(int cardId) {
+        return rotateCard[cardId / 4][cardId % 4];
+    }
+
+    public Image getStage() {
+        return stage;
+    }
+
+    public Image getCardBack() {
+        return cardBack;
+    }
+    
+    public Image getMoveCard() {
+        return moveCard;
+    }
+
+    public void setMoveCard(Image moveCard) {
+        this.moveCard = moveCard;
+    }
+
+    public Image getReturnLobbyButton() {
+        return returnLobbyButton;
+    }
+
+    public Image getDarkenScreen() {
+        return darkenScreen;
     }
 }

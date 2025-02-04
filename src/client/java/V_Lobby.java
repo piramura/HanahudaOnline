@@ -105,7 +105,7 @@ class V_Lobby extends JPanel {
                 int opponentIconY = 260;
                 g.drawImage(imageLoader.getCard(m_Lobby.getOpponentIconNumber()), 1100 - m_Lobby.getMoveX(), 265, 114, 153, this);
                 /* 対戦時の相手のプレイヤー名の表示*/
-                String opponentPlayerName = m_Lobby.getOriginalOpponentPlayerName();
+                String opponentPlayerName = m_Lobby.getOpponentPlayerName();
                 opponentPlayerName += String.format(" Lv.%d", m_Lobby.getOpponentExperience() / 50);
                 Font opponentLargerFont = g.getFont();
                 g.setFont(opponentLargerFont);

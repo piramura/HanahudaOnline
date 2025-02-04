@@ -100,9 +100,7 @@ class C_Lobby extends JPanel {
                 }
                 else if (m_Lobby.getAlpha() == 1 && !m_Lobby.getIsSettingOpen() && !m_Lobby.getIsPlayerIcon() && !m_Lobby.getIsSession() && m_Lobby.getComputerButtonBounds().contains(e.getPoint())) {
                     /* コンピュータ対戦ボタンがクリックされた場合*/
-                    System.out.println("コンピュータ対戦");
                     m_Lobby.Computer();
-                    System.out.println("コンピュータ対戦");
                 }
                 else if (m_Lobby.getAlpha() == 1 && !m_Lobby.getIsSettingOpen() && !m_Lobby.getIsPlayerIcon() && !m_Lobby.getIsSession() && m_Lobby.getHowToPlayButtonBounds().contains(e.getPoint())) {
                     /* 遊び方ボタンがクリックされた場合*/
@@ -135,7 +133,7 @@ class C_Lobby extends JPanel {
     }
 
     public void moveOnlineGame(GameController gameController, GameClient client) {
-        OnlineGame onlineGamePanel = new OnlineGame(frame, gameController, client);
+        C_OnlineGame c_OnlineGamePanel = new C_OnlineGame(frame, gameController, client);
     }
 
     public void moveTitle() {
@@ -145,15 +143,11 @@ class C_Lobby extends JPanel {
     public void addSlider(JSlider slider1, JSlider slider2) {
         this.panel.add(slider1);
         this.panel.add(slider2);
-        this.panel.revalidate();
-        this.panel.repaint();
     }
 
     public void removeSlider(JSlider slider1, JSlider slider2) {
         this.panel.remove(slider1);
         this.panel.remove(slider2);
-        this.panel.revalidate();
-        this.panel.repaint();
     }
 
     public JTextField getPlayerNameInputField() {

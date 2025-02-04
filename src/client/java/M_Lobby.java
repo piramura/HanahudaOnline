@@ -30,8 +30,8 @@ class M_Lobby extends JPanel {
     private C_Lobby c_Lobby;
     private boolean isSettingOpen = false;
     private boolean isPlayerIcon = false;
-    private boolean isCheckMarkVisibleBGM;
-    private boolean isCheckMarkVisibleSE;
+    private boolean isCheckMarkVisibleBGM = AppPreferences.getBoolean("BGM", true);
+    private boolean isCheckMarkVisibleSE = AppPreferences.getBoolean("SE", true);
     private boolean isReturnTitle = false;
     private boolean isSession = false;
     private boolean doorsOpen = false;
@@ -61,7 +61,7 @@ class M_Lobby extends JPanel {
     private JSlider slider2;
     private ArrayList<Ball> balls = new ArrayList<>();
     private Random random = new Random();
-    private String originalOpponentPlayerName = "Computer";
+    private String opponentPlayerName = "Computer";
     private int opponentIconNumber = 0;
     private int opponentExperience = 0;
     private boolean gameStarted = false;
@@ -182,8 +182,8 @@ class M_Lobby extends JPanel {
     public void Online() {
         AppPreferences.putString("プレイヤー名", c_Lobby.getPlayerNameInputField().getText());
         gameController = new GameController();
-        // client = new GameClient("https://hanahudaonline.onrender.com"/);
-        client = new GameClient("http://localhost:10030");
+        client = new GameClient("https://hanahudaonline.onrender.com");
+        //client = new GameClient("http://localhost:10030");
         client.setGameController(gameController);
         gameController.setGameClient(client);
         gameController.setBotMode(false);
@@ -194,8 +194,8 @@ class M_Lobby extends JPanel {
     public void Computer(){
         AppPreferences.putString("プレイヤー名", c_Lobby.getPlayerNameInputField().getText());
         gameController = new GameController();
-        // client = new GameClient("https://hanahudaonline.onrender.com"/);
-        client = new GameClient("http://localhost:10030");
+        client = new GameClient("https://hanahudaonline.onrender.com");
+        //client = new GameClient("http://localhost:10030");
         client.setGameController(gameController);
         gameController.setGameClient(client);
         gameController.setBotMode(true);
@@ -209,7 +209,7 @@ class M_Lobby extends JPanel {
         /* セッション中*/
         isSession = true;
         c_Lobby.setTimeLabel();
-        uiTimer = new Timer(500, e -> {
+        uiTimer = new Timer(64, e -> {
             int elapsedSeconds = gameController.getElapsedTime();
             int minutes = elapsedSeconds / 60;
             int seconds = elapsedSeconds % 60;
@@ -223,7 +223,7 @@ class M_Lobby extends JPanel {
                 if (!gameStarted && client.isGameStarted()) {
                     ((Timer) e.getSource()).stop();
                     gameStarted = true;
-                    //client.sendPlayerInfo(AppPreferences.getString("プレイヤー名", "player"), AppPreferences.getInt("プレイヤーアイコン", 0), AppPreferences.getInt("経験値", 0) / 50);
+                    client.sendPlayerInfo(AppPreferences.getString("プレイヤー名", "player"), AppPreferences.getInt("プレイヤーアイコン", 0), AppPreferences.getInt("経験値", 0) / 50);
                     /* フェードアウト用タイマー*/
                     fadeOutTimer();
                 }
@@ -318,7 +318,7 @@ class M_Lobby extends JPanel {
     /* 対戦相手の情報の取得*/
     private void getOpponentInfo() {
         PlayerInfo opponentInfo = gameController.getOpponentInfo();
-        originalOpponentPlayerName = opponentInfo.getPlayerName();
+        opponentPlayerName = opponentInfo.getPlayerName();
         opponentIconNumber = opponentInfo.getIconNum();
         opponentExperience = opponentInfo.getLevel();
     }
@@ -443,7 +443,7 @@ class M_Lobby extends JPanel {
     public JSlider getSlider2() { return slider2; }
     public ArrayList<Ball> getBalls() { return balls; }
     public Random getRandom() { return random; }
-    public String getOriginalOpponentPlayerName() { return originalOpponentPlayerName; }
+    public String getOpponentPlayerName() { return opponentPlayerName; }
     public int getOpponentIconNumber() { return opponentIconNumber; }
     public int getOpponentExperience() { return opponentExperience; }
     public boolean getIsGameStarted() { return gameStarted; }

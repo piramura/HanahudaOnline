@@ -84,14 +84,10 @@ public class C_Title extends JPanel {
     public void addSlider(JSlider slider1, JSlider slider2) {
         this.panel.add(slider1);
         this.panel.add(slider2);
-        this.panel.revalidate();
-        this.panel.repaint();
     }
 
     public void removeSlider(JSlider slider1, JSlider slider2) {
         this.panel.remove(slider1);
         this.panel.remove(slider2);
-        this.panel.revalidate();
-        this.panel.repaint();
     }
 }
