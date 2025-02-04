@@ -75,7 +75,6 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
     public String fetchPlayerInfo() throws Exception {//相手の情報を取り出す　GET
         HttpRequest request = buildRequest("/game/player", "GET", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
-        System.out.println("サーバーのレスポンス: " + response.body()); // 追加
         if (response.statusCode() == 200) {
             //System.out.println("Player info fetched successfully: " + response.body());
             //
@@ -115,14 +114,10 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
 
             if (responseBody.startsWith("GAME_END") && !controller.getIsEnd()) { 
                 controller.setIsEnd(true);
-                System.out.println("controller.getIsEnd(): fetchGameState() " + controller.getIsEnd());
-    
-                // **リザルトを取得**
                 getResultFromServerAsync();
                 System.out.println("getResultFromServerAsync() 呼び出し");
             } else if (controller.getIsEnd() && controller.getResult() == null) { // すでにゲーム終了していて、リザルト未取得なら
                 getResultFromServerAsync();
-                System.out.println("getResultFromServerAsync() 再取得防止チェック");
             } else if (!controller.getIsEnd()) {
                 controller.parseGameState(responseBody); 
             }
@@ -143,13 +138,11 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
         CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
             .thenApply(HttpResponse::body)
             .thenAccept(responseBody -> {
-                System.out.println("ゲーム状態: " + responseBody);
+                //System.out.println("ゲーム状態: " + responseBody);
                 if(responseBody.startsWith("GAME_END")){
                     controller.setIsEnd(true);
-                    System.out.println("controller.getIsEnd(): " + controller.getIsEnd());
                     try{
                         getResultFromServerAsync();
-                        System.out.println("getResultFromServerAsync()");
                     }catch(Exception e){
                         e.printStackTrace();
                     }
@@ -158,7 +151,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
                 }
             })
             .exceptionally(ex -> {
-                System.err.println("ゲーム状態取得エラー: " + ex.getMessage());
+                System.err.println("fetchGameStateAsync()ゲーム状態取得エラー: " + ex.getMessage());
                 return null;
             });
     }
@@ -175,7 +168,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
         CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
             .thenApply(HttpResponse::body)
             .thenAccept(responseBody -> {
-                System.out.println("playCard: " + responseBody);
+                System.out.println("playCardの結果: " + responseBody);
                 if (responseBody.startsWith("CONTINUE_TURN")) {
                     continueYourTurn();
                 } else if (responseBody.startsWith("KOIKOI_WAITING")) {
@@ -196,7 +189,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
     //ここからPlayCardの補助関数
     private void continueYourTurn(){
         try{
-            System.out.println("continueYourTurn処理中");
+            System.out.println("CONTINUE_TURN:処理中");
             fetchGameState();
         }catch(Exception e){
             System.err.println("continueYourTurnの fetchGameState()でEROOR");
@@ -204,10 +197,10 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
 
     }
     private void handleKoiKoiSelection(String responseBody) {
-        System.out.println("こいこい待機中:テスト用で、KOIKOIと " + responseBody);
+        System.out.println("KOIKOI_WAITING:" + responseBody);
         controller.setIsKoikoi(true);
         try{
-            // sendNextTurnMessage("KOIKOI");
+            controller.parseRoleInfo(responseBody);
         }catch(Exception e){
             System.err.println("sendNextTurnMessage(\"KOIKOI\")でエラー");
         }
@@ -215,7 +208,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
     private void handleNextTurn(String responseBody) {
         System.out.println("次のターンに進みます: " + responseBody);
     
-        // **遅延を入れて次のターンへ**
+        // 遅延を入れて次のターンへ
         scheduler.schedule(() -> {
             try {
                 sendNextTurnMessage("NEXT_TURN");
@@ -226,7 +219,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
         }, TURN_DELAY, TimeUnit.MILLISECONDS);
     }
     private void handleGameEnd(String responseBody) {
-        System.out.println("ゲーム終了: " + responseBody);
+        System.out.println("すでにゲーム終了しています。: " + responseBody);
     }
     //PlayCardの補助関数ここまで
     public void sendNextTurnMessage(String answer)throws Exception {
@@ -235,7 +228,6 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
         System.out.println("messageを作成 " + message);
         HttpRequest request = buildRequest("/game/next", "POST", message);
         System.out.println("requestを作成 " + request);
-
         // HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());ここで地獄
         CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
             .thenApply(HttpResponse::body)

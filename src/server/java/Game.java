@@ -120,7 +120,7 @@ public class Game {
             isEnd = true;
         } else {
             playCount = 0; // プレイ回数をリセット
-            System.out.println("次のターンへ。現在のプレイヤー: " + currentTurn);
+            System.out.println("次のターンへ。現在のターン: " + currentTurn);
             currentTurn++;
             currentPlayerIndex = currentTurn % 2 + 1; // 次のプレイヤーに切り替え
             System.out.println("次のターンへ。現在のプレイヤー: " + currentPlayerIndex);

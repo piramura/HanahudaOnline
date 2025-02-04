@@ -223,7 +223,7 @@ class M_Lobby extends JPanel {
                 if (!gameStarted && client.isGameStarted()) {
                     ((Timer) e.getSource()).stop();
                     gameStarted = true;
-                    client.sendPlayerInfo(AppPreferences.getString("プレイヤー名", "player"), AppPreferences.getInt("プレイヤーアイコン", 0), AppPreferences.getInt("経験値", 0) / 50);
+                    //client.sendPlayerInfo(AppPreferences.getString("プレイヤー名", "player"), AppPreferences.getInt("プレイヤーアイコン", 0), AppPreferences.getInt("経験値", 0) / 50);
                     /* フェードアウト用タイマー*/
                     fadeOutTimer();
                 }
@@ -239,7 +239,7 @@ class M_Lobby extends JPanel {
         Timer fadeTimer = new Timer(16, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                alpha -= 0.02f;
+                alpha -= 0.015f;
                 if (alpha <= 0.0f) {
                     alpha = 0.0f;
                     ((Timer) e.getSource()).stop();
@@ -254,7 +254,7 @@ class M_Lobby extends JPanel {
         Timer wallTimer = new Timer(16, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                wallSize -= 0.2f;
+                wallSize -= 0.15f;
                 if (wallSize <= 1) {
                     wallSize = 1;
                     ((Timer) e.getSource()).stop();
@@ -269,7 +269,7 @@ class M_Lobby extends JPanel {
         Timer doorTimer = new Timer(16, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                doorSize -= 0.04f;
+                doorSize -= 0.03f;
                 if(doorSize <= 1){
                     doorSize = 1;
                     ((Timer) e.getSource()).stop();

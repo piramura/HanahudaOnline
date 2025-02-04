@@ -60,7 +60,6 @@ public class Card{
     	this.isInPlay = inPlay;
 	}
 
-
     // 内部クラス：役の情報を管理
     public static class Role {
         private final String name;

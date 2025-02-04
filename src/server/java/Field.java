@@ -93,5 +93,13 @@ public class Field {
             }
         }
     }
+    public boolean hasMatchingCard(Card handCard) {
+        for (Card fieldCard : cards) {
+            if (fieldCard.getMonth() == handCard.getMonth()) {
+                return true; // **同じ月のカードが見つかったら true**
+            }
+        }
+        return false; // **一致するカードがない場合は false**
+    }
     
 }

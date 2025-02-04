@@ -424,7 +424,7 @@ class OnlineGame extends JPanel {
         frame.setContentPane(panel);
         frame.revalidate();
         /* ターン更新タイマー*/
-        Timer updateTurnTimer = new Timer(16, new ActionListener() {
+        Timer updateTurnTimer = new Timer(64, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 try{
@@ -649,6 +649,7 @@ class OnlineGame extends JPanel {
                     } catch (Exception ev){
                         ev.printStackTrace();
                     }
+                    controller.setIsKoikoi(false);
                     isKOIKOI = false;
                 }
                 else if (isKOIKOI && ENDButtonBounds.contains(e.getPoint())) {
@@ -657,6 +658,7 @@ class OnlineGame extends JPanel {
                     } catch (Exception ev){
                         ev.printStackTrace();
                     }
+                    controller.setIsKoikoi(false);
                     isKOIKOI = false;
                     try {
                         //controller.getGameClient().disconnect();

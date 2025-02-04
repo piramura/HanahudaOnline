@@ -9,18 +9,29 @@ public class HanahudaGameLogic {
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Game game;
     private int playCount = 0; // 現在のターンでのプレイ回数
-    private Random random = new Random(); // **ここで1つだけ作成**
+    private Random random = new Random(); // ここで1つだけ作成
     private boolean botMode;
+    private boolean isKoiKoiWaiting;
+    private int lastScoringPlayer = -1; // 最後に役を成立させたプレイヤーのID
+    private RoleResult previousRoleResult;
     
     public Game getGame(){return game;}//
     public void setBotMode(boolean botMode){this.botMode = botMode;}
     public boolean getBouMode(){return botMode;}
+    public boolean isKoiKoiWaiting() {return this.isKoiKoiWaiting;}//こいこい待機中かどうか
+    public void resetIsKoiKoiWaiting() {
+        System.out.println("こいこいリセット");
+        this.isKoiKoiWaiting=false;
+    
+    }//こいこい待機中かどうか
 
     public void resetGame() {
         Deck deck = new Deck();
         this.game = new Game(deck);
         game.initializeGame(this);
         game.setCurrentPlayerIndex(1);
+        this.lastScoringPlayer = -1;
+        this.isKoiKoiWaiting = false;
         System.out.println("ゲーム開始！ 配札完了！");
     }
    
@@ -28,8 +39,10 @@ public class HanahudaGameLogic {
     //PLAY_CARDで呼ばれる関数。
     public String processPlayerAction(int playerIndex, int handCardId, int fieldCardId) {
         Player currentPlayer = game.getPlayers().get(playerIndex == 2 ? 1 : 0);
-        RoleResult previousRoleResult = currentPlayer.getRoleResult();
-
+        if(game.getPlayCount()==0){
+            previousRoleResult = currentPlayer.getRoleResult();
+            System.out.println("previousRoleResultセット"+previousRoleResult);
+        }
         if (playerIndex != game.getCurrentPlayerIndex()) {
             return "ERROR: 現在のプレイヤーではありません。";
         }
@@ -39,16 +52,26 @@ public class HanahudaGameLogic {
         if (game.getPlayCount() >= 2) {
             RoleResult newRoleResult = RoleChecker.checkRules(currentPlayer);
             currentPlayer.setRoleResult(newRoleResult);
+            boolean isUpScore = false; 
+            System.out.println("previousRoleResult"+previousRoleResult);
+            System.out.println("newRoleResult"+newRoleResult);
+            if ((previousRoleResult.getAchievedRoles().size() <= newRoleResult.getAchievedRoles().size()) && (previousRoleResult.getTotalScore() < newRoleResult.getTotalScore())) {
+                isUpScore = true;
+            }
+            previousRoleResult = newRoleResult;
 
-            if (!newRoleResult.getAchievedRoles().isEmpty() &&
-                !previousRoleResult.getAchievedRoles().containsAll(newRoleResult.getAchievedRoles())) {
-                
+            if (!newRoleResult.getAchievedRoles().isEmpty() && isUpScore) {
+                lastScoringPlayer = playerIndex;
                 currentPlayer.setKoiKoi(true);
+                this.isKoiKoiWaiting = true;
+                // **役をカンマ区切りの `String` に変換**
+                String roleString = String.join(",", newRoleResult.getAchievedRoles());
+
                 return "KOIKOI_WAITING: 役が成立しました。「こいこい」を選択してください。\n" +
-                    "役: " + newRoleResult.getAchievedRoles() + "\n" +
+                    "役: " + roleString + "\n" +
                     "得点: " + newRoleResult.getTotalScore();
             }
-
+            
             currentPlayer.setKoiKoi(false);
             return game.getIsEnd() ? "GAME_END: 相手の勝利。" : "NEXT_TURN: ターン " + game.getCurrentTurn();
         
@@ -67,12 +90,12 @@ public class HanahudaGameLogic {
             Card drawnCard = game.getDeck().draw();
             if (drawnCard != null) {
                 player.addCardToHand(drawnCard);
-                return "山札からカードを引きました: " + drawnCard.toString();
+                return "山札からカードを引きましたCardId: " + drawnCard.getId();
             }
             return "山札が空です。";//起こらない
         }
     
-        return game.getPlayCount() == 1 ? "相手のターンへ" : "エラー: 3回目のプレイは無効";
+        return game.getPlayCount() == 1 ? "2回目のPlayなので相手のターンへ" : "エラー: 3回目のプレイは無効";
     }
 
     private int findCardIndexInHand(Player player, int cardId) {
@@ -89,25 +112,24 @@ public class HanahudaGameLogic {
         Player player1 = game.getPlayers().get(0);
         Player player2 = game.getPlayers().get(1);
     
-        // **Player クラスに保存された最新の RoleResult を使う**
-        RoleResult result1 = player1.getRoleResult();
-        RoleResult result2 = player2.getRoleResult();
+        int score1 = player1.getRoleResult().getTotalScore();
+        int score2 = player2.getRoleResult().getTotalScore();
     
-        System.out.println(result1);
-        System.out.println(result2);
+        // **最後に役を成立させたプレイヤー以外のスコアを0にする**
+        if (lastScoringPlayer == 1) {
+            score2 = 0;
+        } else if (lastScoringPlayer == 2) {
+            score1 = 0;
+        } else {
+            // **どちらも役を成立させていない場合**
+            score1 = 0;
+            score2 = 0;
+        }
     
-        int score1 = result1.getTotalScore();
-        int score2 = result2.getTotalScore();
         String result = "ゲーム終了！\n";
-        
-        if(!player1.isKoiKoi()){
-            result += "プレイヤー 1 の得点: " + score1 + result1+"\n";
-        }
-
-        if(!player2.isKoiKoi()){
-            result += "プレイヤー 2 の得点: " + score2 + result2+"\n";
-        }
-
+        result += "プレイヤー 1 の得点: " + score1 + "\n";
+        result += "プレイヤー 2 の得点: " + score2 + "\n";
+    
         if (score1 > score2) {
             result += "プレイヤー 1 の勝利！";
         } else if (score2 > score1) {
@@ -118,20 +140,22 @@ public class HanahudaGameLogic {
     
         return result;
     }
-
+    
     //これらはパブリックで管理される。
     public void nextTurn() {
+        if (isKoiKoiWaiting) {
+            System.out.println("こいこい待機中のため、ターンを進めません。");
+            return;
+        }
         game.nextTurn();
-        System.out.println("game.getIsEnd()=="+game.getIsEnd());
+        //System.out.println("game.getIsEnd()=="+game.getIsEnd());
         if (game.getIsEnd()) {
             return;
         }
-        
         int currentPlayerId = game.getCurrentPlayerIndex();
         if (botMode && isBotTurn(currentPlayerId)) {
             playBotTurn(currentPlayerId);
-        }
-        
+        }   
     }
 
     //BOTのターンかどうかを判定
@@ -141,41 +165,45 @@ public class HanahudaGameLogic {
     //
     private void playBotTurn(int botPlayerId) {
         System.out.println("BOTのターンです。");
-        Player player = game.getPlayers().get(botPlayerId - 1);
-    
+        Player bot = game.getPlayers().get(botPlayerId - 1);
+        RoleResult preResult = RoleChecker.checkRules(bot);
+        game.resetPlayCount();
         // 1回目のプレイ
-        scheduler.schedule(() -> botPlayCard(player), 500, TimeUnit.MILLISECONDS);
-        
+        scheduler.schedule(() -> {
+            //最適な手札のカードと場のカードを選ぶ
+            int[] bestMove = chooseBestMove(bot, game.getField());
+            int bestCardId = bestMove[0];
+            int bestFieldCardId = bestMove[1];
+            System.out.println("1回目プレイ"+ bestCardId +":"+ bestFieldCardId);
+            System.out.println(handleCardPlay(2, bestCardId, bestFieldCardId));
+            game.incrementPlayCount();
+        }, 500, TimeUnit.MILLISECONDS);
         // 2回目のプレイ（場の更新を待つ）
         scheduler.schedule(() -> {
-            int handCardId = player.getHand().get(player.getHand().size()-1).getId();
-            int fieldCardId = findMatchingCardInField(game.getField(), handCardId);
-            System.out.println(handleCardPlay(2, handCardId, fieldCardId));
+            Card handCard = bot.getHand().get(bot.getHand().size()-1);
+            int handCardId = handCard.getId();
+            int fieldCardId = chooseBestFieldCard(bot, game.getField(), handCard);
+            System.out.println("2回目プレイ"+ handCardId+":"+ fieldCardId);
+            System.out.println(handleCardPlay(2, handCard.getId(), fieldCardId));
+            game.incrementPlayCount();
             scheduler.schedule(() -> nextTurn(), 500, TimeUnit.MILLISECONDS);
         }, 5000, TimeUnit.MILLISECONDS);
-    }
-    
-    // BOTが1枚プレイする共通処理
-    private void botPlayCard(Player player) {
-        System.out.println("DEBUG: ぼっとがプレイ中");
-        if (!player.getHand().isEmpty()) {
-            int handCardId = player.getHand().get(0).getId();
-            System.out.println("DEBUG: ぼっとがプレイ中handCardId"+handCardId);
-            int fieldCardId = findMatchingCardInField(game.getField(), handCardId);
-            System.out.println("DEBUG: ぼっとがプレイ中fieldCardId"+fieldCardId);
-            System.out.println("DEBUG: ぼっとがプレイ中player.getPlayerID()"+player.getPlayerID());
-            System.out.println(handleCardPlay(2, handCardId, fieldCardId));
-        } else {
-            System.out.println("BOTの手札が空でプレイをスキップします。");
+
+
+        if(game.getPlayCount()>=2){
+            RoleResult newResult = RoleChecker.checkRules(bot);
+            boolean isUpScore = false; 
+            if (preResult.getAchievedRoles().size() < newResult.getAchievedRoles().size()) {
+                isUpScore = true;
+            }
+            bot.setRoleResult(newResult);
+            game.resetPlayCount();
+            if(isUpScore){
+                endGame();
+                //botがゲームエンド
+            }
         }
     }
-
-    public int chooseBestCardIndex(List<Card> playerHand, List<Card> playerTaken, List<Card> tableCards) {
-
-        return playerHand.get(0).getId();
-    }
-    
-    // 
     private int findMatchingCardInField(Field field, int cardId) {
         List<Card> fieldCards = field.getCards();
         for (Card card : fieldCards) {
@@ -186,18 +214,128 @@ public class HanahudaGameLogic {
         }
         return -1; // 場に一致するカードがない場合は -1（そのまま場に出す）
     }
+    public void endGame(){game.setIsEnd(true);}//ゲーム終了処理
+    public boolean isGameFinished() {return game.getIsEnd();}
 
-    public void endGame(){
-        //ゲーム終了処理
-        game.setIsEnd(true);
-        System.out.println("GAME_END: endGameだけど");
-        //リザルトを返してゲームリセット
+    public int[] chooseBestMove(Player player, Field field) {
+        List<Card> hand = player.getHand();
+        int bestCardId = -1;
+        int bestFieldCardId = -1;
+        int maxScore = Integer.MIN_VALUE;
+    
+        for (Card handCard : hand) {
+            // 場のカードがない場合（単独プレイ）
+            int score = evaluateMove(player, field, handCard, null);
+            if (score > maxScore) {
+                maxScore = score;
+                bestCardId = handCard.getId();
+                bestFieldCardId = -1;
+            }
+
+            // 場にマッチするカードがある場合
+            for (Card fieldCard : field.getCards()) {
+                if (fieldCard.getMonth() == handCard.getMonth()) {
+                    score = evaluateMove(player, field, handCard, fieldCard);
+                    if (score > maxScore) {
+                        maxScore = score;
+                        bestCardId = handCard.getId();
+                        bestFieldCardId = fieldCard.getId();
+                    }
+                }
+            }
+        }
+        return new int[]{bestCardId, bestFieldCardId};
     }
+
+    public int chooseBestFieldCard(Player player, Field field, Card handCard) {
+        int bestFieldCardId = -1;
+        int maxScore = Integer.MIN_VALUE;
     
-    public boolean isGameFinished() {
-        //System.out.println("game.isBothHandEmpty()="+game.isBothHandEmpty()+" game.getIsEnd()="+game.getIsEnd());
-        return game.getIsEnd();
+        for (Card fieldCard : field.getCards()) {
+            if (fieldCard.getMonth() == handCard.getMonth()) {
+                int score = evaluateMove(player, field, handCard, fieldCard);
+                if (score > maxScore) {
+                    maxScore = score;
+                    bestFieldCardId = fieldCard.getId();
+                }
+            }
+        }
+        return bestFieldCardId;
     }
+
+    private int evaluateMove(Player player, Field field, Card handCard, Card fieldCard) {
+        List<Card> simulatedCaptures = new ArrayList<>(player.getCaptures());
+        int previousScore = player.getRoleResult().getTotalScore();//過去のスコア
+
+        boolean isMatching = (fieldCard != null);
+        if (isMatching) {
+            simulatedCaptures.add(handCard);
+            simulatedCaptures.add(fieldCard);
+        }
+        RoleResult simulatedResult = RoleChecker.checkRules(player);
+        int newScore = simulatedResult.getTotalScore();// 現在のスコア
+        int scoreDelta = newScore - previousScore;
+        int evaluation = 0;
+        //評価基準1:役が成立するなら高評価
+        evaluation += scoreDelta * 5;
+        //評価基準2:高得点のカードを取れるなら加点
+        if (handCard.getPoint() == Card.Point.HIKARI) evaluation += 3;
+        if (handCard.getPoint() == Card.Point.TANE) evaluation += 2;
+        if (handCard.getPoint() == Card.Point.TANZAKU) evaluation += 1;
+        //評価基準3:場のカードとマッチするなら加点
+        if (isMatching) evaluation += 3;
+        //評価基準4:相手に有利なカードを場に残さない（マッチしない場合のみ適用）
+        if (!isMatching && field.hasMatchingCard(handCard)) {
+            evaluation -= 2; // 相手に取られやすいカードならペナルティ
+        }
     
+        return evaluation;
+    }
+
+    public int checkScoreForCards(List<Card> cards) {
+        int lightCount = 0;
+        int rainyLightCount = 0;
+        int hanamiCount = 0;
+        int tsukimiCount = 0;
+        int inoshikaChoCount = 0;
+        int redShortCount = 0;
+        int blueShortCount = 0;
+        int taneCount = 0;
+        int tanCount = 0;
+        int kasuCount = 0;
+        for (Card card : cards) {
+            for (Card.Role role : card.getRole()) {
+                switch (role.getName()) {
+                    case "五光": lightCount++; break;
+                    case "雨四光": rainyLightCount++; break;
+                    case "花見で一杯": hanamiCount++; break;
+                    case "月見で一杯": tsukimiCount++; break;
+                    case "猪鹿蝶": inoshikaChoCount++; break;
+                    case "赤短": redShortCount++; break;
+                    case "青短": blueShortCount++; break;
+                    case "タネ": taneCount++; break;
+                    case "タン": tanCount++; break;
+                    case "カス": kasuCount++; break;
+                }
+            }
+        }
+        int totalScore = 0;
+        if (lightCount == 5) totalScore += 10;
+        else if (lightCount == 4) totalScore += (rainyLightCount > 0 ? 7 : 8);
+        else if (lightCount - rainyLightCount == 3) totalScore += 5;
     
+        if (hanamiCount == 2) totalScore += 5;
+        if (tsukimiCount == 2) totalScore += 5;
+    
+        if (inoshikaChoCount == 3) totalScore += 5;
+    
+        if (redShortCount >= 3) totalScore += 5;
+        if (blueShortCount >= 3) totalScore += 5;
+    
+        if (taneCount >= 5) totalScore += 1;
+        if (tanCount >= 5) totalScore += 1;
+        if (kasuCount >= 10) totalScore += 1;
+    
+        return totalScore;
+    }
 }

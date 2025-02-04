@@ -5,6 +5,7 @@ import java.awt.event.ActionListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.*;
 public class GameController {
     //private OnlineGame onlineGame;
     private GameClient gameClient;
@@ -15,6 +16,7 @@ public class GameController {
     private List<Integer> player2Captures;
     private List<Integer> previousField = new ArrayList<>();
     private List<Integer> previousOpponentHand = new ArrayList<>();
+    private List<Integer> previousOpponentCaptures= new ArrayList<>();
     private PlayerInfo selfInfo;
     private PlayerInfo opponentInfo;
     private int currentTurn;
@@ -32,7 +34,11 @@ public class GameController {
     private int opponentSecondPlayedFieldCard = -1; // 相手の2回目の場のカード
     private boolean opponentPlayed = false; // UIに通知するためのフラグ
     private int opponentPlayCount;
-
+    private boolean isGameStarted;
+    private int[] roleIds = new int[0]; // 初期化
+    private int rolePoint = 0;
+    public int[] getRoleIdArray(){return roleIds;}
+    public int getRolePoint(){return rolePoint;}
     public void incrementOpponentPlayCount(){opponentPlayCount++;}//opponentPlayCountを進める
     public int getOpponentPlayCount(){return opponentPlayCount;}//opponentPlayCountをゲット
     public void resetOpponentPlayCount(){opponentPlayCount = 0;}//opponentPlayCountをリセット
@@ -101,10 +107,11 @@ public class GameController {
         return new PlayerInfo(playerName, iconNum, level);
     }
     public void parseGameState(String rawGameState) {//サーバーから送られてきたゲーム情報をセット
-        if(field !=null && player2Hands != null){
-            previousField = new ArrayList<>(field);
-            previousOpponentHand = new ArrayList<>(player2Hands); // 相手の手札の前回の状態を保存
-        }
+        if(field !=null){previousField = new ArrayList<>(field);}
+        if(player2Hands != null){previousOpponentHand = new ArrayList<>(player2Hands);}
+        if(player2Captures != null){previousOpponentCaptures = new ArrayList<>(player2Captures);}
+        
+         // 相手の手札の前回の状態を保存
         
         String[] lines = rawGameState.split("\n");
         for (String line : lines) {
@@ -128,34 +135,61 @@ public class GameController {
         if (currentTurn % 2 + 1 == playerId) {
             resetOpponentState();
             return;
-        } // 自分のターンでは何もしない
-        // 1. 手札の変化を確認
+        }
+    
+        // **手札の変化を確認**
         List<Integer> removedFromHand = new ArrayList<>(previousOpponentHand);
-        removedFromHand.removeAll(player2Hands);//差のみのこる
-        // 2. 場の変化を確認
+        removedFromHand.removeAll(player2Hands);
+    
+        // **場の変化を確認**
         List<Integer> addedToField = new ArrayList<>(field);
         addedToField.removeAll(previousField);
-  
+    
+        List<Integer> removedFromField = new ArrayList<>(previousField);
+        removedFromField.removeAll(field); // 場から消えたカードを取得
+    
         if (!removedFromHand.isEmpty()) {
             if (opponentFirstPlayedCard == -1) {
+                // **1回目のプレイ**
                 opponentFirstPlayedCard = removedFromHand.get(0);
-                opponentFirstPlayedFieldCard = addedToField.isEmpty() ? -1 : addedToField.get(0);
-                System.out.println("[DEBUG] 1回目のプレイ - 手札から: " + opponentFirstPlayedCard + ", 場: " + opponentFirstPlayedFieldCard);
-                opponentPlayed = true; // アニメーション用フラグをセット
+    
+                if (!addedToField.isEmpty()) {
+                    opponentFirstPlayedFieldCard = addedToField.get(0); // **場に置いた**
+                } else if (!removedFromField.isEmpty()) {
+                    opponentFirstPlayedFieldCard = removedFromField.get(0); // **場から取った**
+                } else {
+                    opponentFirstPlayedFieldCard = -1; // **場に変化なし**
+                }
+                System.out.println("[DEBUG] 1回目のプレイ修正前 - 手札から: " + opponentFirstPlayedCard + ", 場: " + opponentFirstPlayedFieldCard);
+                if(opponentFirstPlayedCard == opponentFirstPlayedFieldCard){
+                    opponentFirstPlayedFieldCard = -1;
+                }
+                System.out.println("[DEBUG] 1回目のプレイ修正後 - 手札から: " + opponentFirstPlayedCard + ", 場: " + opponentFirstPlayedFieldCard);
+                opponentPlayed = true;
             } else if (opponentSecondPlayedCard == -1) {
-                if (removedFromHand.size() > 1) removedFromHand.remove(opponentFirstPlayedCard);
-                
+                // **2回目のプレイ**
+                removedFromHand.removeIf(card -> card == opponentFirstPlayedCard);
                 opponentSecondPlayedCard = removedFromHand.isEmpty() ? -1 : removedFromHand.get(0);
-                opponentSecondPlayedFieldCard = addedToField.isEmpty() ? -1 : addedToField.get(0);
-                // opponentSecondPlayedCard = removedFromHand.get(0);
-                // opponentSecondPlayedFieldCard = addedToField.isEmpty() ? -1 : addedToField.get(0);
-                System.out.println("[DEBUG] 2回目のプレイ - 山札から: " + opponentSecondPlayedCard + ", 場: " + opponentSecondPlayedFieldCard);
-                opponentPlayed = true; // アニメーション用フラグをセット
+    
+                if (!addedToField.isEmpty()) {
+                    opponentSecondPlayedFieldCard = addedToField.get(0); // 場に置いた
+                } else if (!removedFromField.isEmpty()) {
+                    opponentSecondPlayedFieldCard = removedFromField.get(0); // 場から取った
+                } else {
+                    opponentSecondPlayedFieldCard = -1; // 場に変化なし
+                }
+                System.out.println("[DEBUG] 2回目のプレイ修正前 - 山札から: " + opponentSecondPlayedCard + ", 場: " + opponentSecondPlayedFieldCard);
+                if(opponentSecondPlayedCard == opponentSecondPlayedFieldCard){
+                    opponentSecondPlayedFieldCard = -1;
+                }
+                System.out.println("[DEBUG] 2回目のプレイ修正後 - 山札から: " + opponentSecondPlayedCard + ", 場: " + opponentSecondPlayedFieldCard);
+                opponentPlayed = true;
             }
             System.out.println("[DEBUG] opponentPlayed フラグを true に設定");
-            
         }
     }
+    
+
     public void resetOpponentState(){
         opponentFirstPlayedCard = -1;
         opponentFirstPlayedFieldCard = -1;
@@ -203,6 +237,7 @@ public class GameController {
     
     public void startOnlineMatch() {// オンライン対戦開始
         try {
+            isGameStarted = false;
             boolean sessionInitialized =false;
             int maxAttempts = 10;
             int attempt = 0;
@@ -234,10 +269,10 @@ public class GameController {
                     }
                 }
             }
-
             playerId = gameClient.fetchPlayerId(); // 自分のPlayerIDを取得
             System.out.println("現在の Player ID: " + playerId);
-            
+            gameClient.sendPlayerInfo(AppPreferences.getString("プレイヤー名", "player"), AppPreferences.getInt("プレイヤーアイコン", 0), AppPreferences.getInt("経験値", 0) / 50);
+            //gameclient.sendPlayerInfo(AppPreferences.putString(("プレイヤー名", "player")), AppPreferences.putString("経験値"), AppPreferences.putInt("経験値")/50);
             final long maxTime = 5 * 60 * 1000;
             isActive = false;
             Timer timer = new Timer(1000, new ActionListener() {
@@ -253,9 +288,11 @@ public class GameController {
                             isActive = true;
                             return;
                         }
-                        if(gameClient.isGameStarted()) {
+                        if(gameClient.isGameStarted() && !isGameStarted) {
                             ((Timer) e.getSource()).stop();
                             System.out.println("ゲームが開始されました!");
+                            isGameStarted = true;
+                            Thread.sleep(500);
                             gameClient.fetchPlayerInfo();
                             playCount=0;
                         } else {
@@ -272,5 +309,68 @@ public class GameController {
             System.err.println("セッションの初期化に失敗しました: " + e.getMessage());
         }
     }
+
+    public void parseRoleInfo(String roleString){
+        System.out.println("今から処理する部分");
+        System.out.println(roleString);
+
+        int roleStartIndex = roleString.indexOf("役:");
+        int scoreStartIndex = roleString.indexOf("得点:");
+
+        if (roleStartIndex == -1 || scoreStartIndex == -1) {
+            System.err.println("エラー: 役または得点の情報が見つかりません");
+            return;
+        }
+
+        String rolesString = roleString.substring(roleStartIndex + 2, scoreStartIndex).trim();
+        String scoreString = roleString.substring(scoreStartIndex + 3).trim();
+
+        roleIds = parseRolesFromServer(rolesString);
+        rolePoint = parseScoreFromServer(scoreString);
+
+        System.out.println("解析結果 - 役 (ID): " + java.util.Arrays.toString(roleIds));
+        System.out.println("解析結果 - 得点: " + rolePoint);
+
+    }
+
+    private void setRolePoint(int point){
+        this.rolePoint = point;
+    }
+    private int parseScoreFromServer(String scoreString) {
+        try {
+            return Integer.parseInt(scoreString.trim());
+        } catch (NumberFormatException e) {
+            System.err.println("エラー: 得点の解析に失敗しました。デフォルト値 0 を使用します。");
+            return 0;
+        }
+    }
+    private int[] parseRolesFromServer(String roleString) {
+        Map<String, Integer> roleMapping = new HashMap<>();
+        roleMapping.put("五光", 1);
+        roleMapping.put("雨四光", 2);
+        roleMapping.put("四光", 3);
+        roleMapping.put("三光", 4);
+        roleMapping.put("花見で一杯", 5);
+        roleMapping.put("月見で一杯", 6);
+        roleMapping.put("猪鹿蝶", 7);
+        roleMapping.put("赤短", 8);
+        roleMapping.put("青短", 9);
+        roleMapping.put("タネ", 10);
+        roleMapping.put("タン", 11);
+        roleMapping.put("カス", 12);
+    
+        // サーバーから送られた役を分解
+        String[] roles = roleString.split(",");
+        int[] tmproleIds = new int[roles.length];
+    
+        for (int i = 0; i < roles.length; i++) {
+            String cleanedRole = roles[i].trim(); // **余分なスペースを削除**
+            tmproleIds[i] = roleMapping.getOrDefault(cleanedRole, -1); // マッピングにない場合は `-1` にする
+        }
+    
+        return tmproleIds;
+    }
+
 }
+
 

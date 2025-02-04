@@ -263,6 +263,11 @@ class NextTurnHandler implements HttpHandler {
         String response;
         if ("KOIKOI".equals(body) || "NEXT_TURN".equals(body)) {
             System.out.println("[DEBUG] 次のターンへ進めます。");
+            if("KOIKOI".equals(body)){
+                gameSessionManager.resetKoiKoiWaiting();
+                System.out.println("gameSessionManager.resetKoiKoiWaiting()");
+            }
+            
             gameSessionManager.nextTurn();
             
             response = "NEXT_TURN: NEXT_TURN";
@@ -336,6 +341,7 @@ class PlayerHandler implements HttpHandler {
             gameSessionManager.setPlayerInfo(playerId, playerName, iconNum, level);
             sendResponse(exchange, 200, "Player info saved: " + playerName);
         } catch (Exception e) {
+            System.err.println("[ERROR] プレイヤー情報の保存に失敗: " + e.getMessage());
             sendResponse(exchange, 500, "ERROR: " + e.getMessage());
         }
     }
@@ -346,9 +352,9 @@ class PlayerHandler implements HttpHandler {
             sendResponse(exchange, 400, "ERROR: セッションIDが提供されていません");
             return;
         }
-
         try {
             int playerId = gameSessionManager.getPlayerId(sessionId);
+            System.out.println("[DEBUG] sessionId: " + sessionId + ", playerId: " + playerId);
             PlayerInfo playerInfo = gameSessionManager.getPlayerInfo(playerId);
             if (playerInfo == null) {
                 sendResponse(exchange, 500, "ERROR: プレイヤー情報が見つかりません");

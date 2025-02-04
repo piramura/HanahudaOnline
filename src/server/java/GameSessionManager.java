@@ -5,10 +5,11 @@ public class GameSessionManager {
     private Map<String, Integer> clientSessions = new HashMap<>(); // セッションIDとプレイヤー番号
     private Map<String, Boolean> clientReadyStates = new HashMap<>(); // クライアントの準備状態
     private Set<String> botSessions = new HashSet<>(); // BOT戦を管理するセッションセット
-
     private boolean gameStarted = false;
+    private int maxClients = 2;
+    private Map<Integer, PlayerInfo> playerInfoMap = new HashMap<>();//プレイヤー情報を保持するマップ
 
-    // **BOT戦のセッションを登録**
+    // BOT戦のセッションを登録
     public synchronized void startBotMatch(String sessionId) {
         botSessions.add(sessionId);
         clientSessions.put(sessionId, 1); // プレイヤー1として登録
@@ -18,22 +19,9 @@ public class GameSessionManager {
         gamelogic.setBotMode(true);
         System.out.println("BOT戦のセッションを登録しました: " + sessionId);
     }
-    // セッションIDが有効か確認
-    public boolean isValidSession(String sessionId) {
-        return clientSessions.containsKey(sessionId);
-    }
-    // **BOT戦かどうかを判定**
-    public boolean isBotMatch(String sessionId) {
-        return botSessions.contains(sessionId);
-    }
-
-
-    private int maxClients = 2;
-    //プレイヤー情報を保持するマップ
-    private Map<Integer, PlayerInfo> playerInfoMap = new HashMap<>();
-    public synchronized PlayerInfo getPlayerInfo(int playerId) {
-        return playerInfoMap.get(playerId);
-    }
+    public boolean isValidSession(String sessionId) {return clientSessions.containsKey(sessionId);}// セッションIDが有効か確認
+    public boolean isBotMatch(String sessionId) {return botSessions.contains(sessionId);}//BOT戦かどうかを判定
+    public synchronized PlayerInfo getPlayerInfo(int playerId) {return playerInfoMap.get(playerId);}//自分のの情報をゲット
     
     public synchronized PlayerInfo getOpponentInfo(int playerId) {
         int opponentId = (playerId == 1) ? 2 : 1; // 2人用ゲームを想定
@@ -69,10 +57,18 @@ public class GameSessionManager {
             startBotMatch(sessionId);
             return "BOT_MATCH_STARTED";
         }
-    
-        int playerNumber = clientSessions.size() + 1;
+        Random rand = new Random();
+        int playerNumber;
+
+        if (clientSessions.isEmpty()) {
+            playerNumber = rand.nextInt(2) + 1; // 最初のプレイヤーは 1 または 2 をランダムに決定
+        } else if (clientSessions.containsValue(1)) {
+            playerNumber = 2; // すでにプレイヤー1がいる場合、プレイヤー2を割り当て
+        } else {
+            playerNumber = 1; // すでにプレイヤー2がいる場合、プレイヤー1を割り当て
+        }
         clientSessions.put(sessionId, playerNumber);
-        clientReadyStates.put(sessionId, false); // 初期状態は未準備
+        clientReadyStates.put(sessionId, false);
         System.out.println("プレイヤー " + playerNumber + " が接続しました。");
     
         return "PLAYER_NUMBER:" + playerNumber;
@@ -94,16 +90,11 @@ public class GameSessionManager {
         if (gameStarted) {
             return "ERROR: ゲームはすでに開始しています";
         }
-        gameStarted = true;
-        // ゲーム開始処理
+        gameStarted = true;// ゲーム開始処理
         gamelogic.resetGame(); // ゲームロジックに委譲
-        //先行後攻をランダムで決める
-        //どうしよ。
         getGameState(sessionId);
-        
         System.out.println("全プレイヤーが準備完了。ゲームを開始します！");
         return "ゲームが開始されました";
-        
     }
     private Integer getPlayerNumber(String sessionId) {
         return clientSessions.get(sessionId);
@@ -112,6 +103,7 @@ public class GameSessionManager {
         System.out.println("clientReadyStates.size(: " + clientReadyStates.size());
         return clientReadyStates.size() == 2 && clientReadyStates.values().stream().allMatch(ready -> ready);
     }
+
     public synchronized String processMessage(String sessionId, String message) {
         System.out.println("受信したセッションID: " + sessionId);
         System.out.println("現在登録されているセッション: " + clientSessions);
@@ -225,12 +217,22 @@ public class GameSessionManager {
     //ゲーム進行
     public void nextTurn(){
         System.out.println("DEBUG:  GameSessionManagerでnextTurn()が呼ばれました");
-        gamelogic.nextTurn();
+        System.out.println("DEBUG: gamelogic.isKoiKoiWaiting()"+gamelogic.isKoiKoiWaiting());
+        if(gamelogic.isKoiKoiWaiting()){
+            System.out.println("DEBUG: こいこい待機中なので待て");
+        }else{
+            gamelogic.nextTurn();
+        }
+        
     }
     public void endGame(){
         gamelogic.endGame();
     }
     public void processComputerTurn(){
         System.out.println("コンピュータの処理中");
+    }
+    public void resetKoiKoiWaiting(){
+        gamelogic.resetIsKoiKoiWaiting();
+        System.out.println("こいこい待機状態を解除");
     }
 }
