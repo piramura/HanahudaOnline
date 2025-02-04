@@ -13,117 +13,64 @@ public class GameController {
     private List<Integer> player2Hands;
     private List<Integer> player1Captures;
     private List<Integer> player2Captures;
+    private List<Integer> previousField = new ArrayList<>();
+    private List<Integer> previousOpponentHand = new ArrayList<>();
     private PlayerInfo selfInfo;
     private PlayerInfo opponentInfo;
     private int currentTurn;
     private int playerId; // 自分のプレイヤーIDを管理
-    private int elapsedTime = 0;
+    private int elapsedTime = 0;//オンラインマッチボタン押してからの経過時間
     private boolean isActive = false;
     private int playCount;
     private boolean isKoikoi = false;
     private boolean isEnd;
     private String resultData;
     private boolean botMode;
-    public void setResult(String result) {
-        this.resultData = result;
-    }
-    public String getResult(){
-        return resultData;
-    }
+    private int opponentFirstPlayedCard = -1;  // 相手の1回目のプレイ
+    private int opponentFirstPlayedFieldCard = -1; // 相手の1回目の場のカード
+    private int opponentSecondPlayedCard = -1; // 相手の2回目のプレイ(山から)
+    private int opponentSecondPlayedFieldCard = -1; // 相手の2回目の場のカード
+    private boolean opponentPlayed = false; // UIに通知するためのフラグ
+    private int opponentPlayCount;
 
-    public String getResultFromController() {
-        return resultData;
-    }
+    public void incrementOpponentPlayCount(){opponentPlayCount++;}//opponentPlayCountを進める
+    public int getOpponentPlayCount(){return opponentPlayCount;}//opponentPlayCountをゲット
+    public void resetOpponentPlayCount(){opponentPlayCount = 0;}//opponentPlayCountをリセット
 
-    
+    public GameClient getGameClient() {return gameClient;}//GemeClientをゲット
+    public int getElapsedTime() {return elapsedTime / 1000;}//経過時間をゲット
+    public boolean getIsActive() {return isActive;}//セッション初期化が失敗したらtrue？？？？？？？？？？？逆だ
+    public int getPlayerId() {return playerId;}//プレイヤーIDをゲット
+    public int getOpponentFirstPlayedCard() {return opponentFirstPlayedCard;}// 相手の1回目のプレイ手札のindex
+    public int getOpponentFirstPlayedFieldCard() {return opponentFirstPlayedFieldCard;}// 相手の1回目のプレイ場のindex
+    public int getOpponentSecondPlayedCard() {return opponentSecondPlayedCard;}// 相手の2回目のプレイ手札のindex
+    public int getOpponentSecondPlayedFieldCard() {return opponentSecondPlayedFieldCard;}// 相手の2回目のプレイ場のindex
+    public boolean hasOpponentPlayed() {return opponentPlayed;}// UIに通知するためのフラグ
+    public void resetOpponentPlayedFlag() {opponentPlayed = false;}// UIに通知したらリセット
+    public void setResult(String result) {this.resultData = result;}//ゲーム結果をセット
+    public String getResult(){return resultData;}//ゲーム結果をゲット
+    public void setField(List<Integer> field) {this.field = field;}//場のリストをセット
+    public List<Integer> getField() {return field;}//場のリストをゲット
+    public List<Integer> getPlayer1Hands() {return player1Hands;}//プレイヤー1の手札をゲット
+    public List<Integer> getPlayer1Captures() {return player1Captures;}//プレイヤー1の取り札をゲット
+    public List<Integer> getPlayer2Hands() {return player2Hands;}//プレイヤー2の手札をゲット
+    public List<Integer> getPlayer2Captures() {return player2Captures;}//プレイヤー2の取り札をゲット
+    public boolean getBotMode(){return botMode;}//botモードかどうかをゲット
+    public void setBotMode(boolean botMode){this.botMode = botMode;}//botモードかどうかをセット
+    public void setPlayer1Hands(List<Integer> player1Hands) {this.player1Hands = player1Hands;}//プレイヤー1の手札をセット
+    public void setPlayer1Captures(List<Integer> player1Captures) {this.player1Captures = player1Captures;}//プレイヤー1の取り札をセット
+    public void setPlayer2Hands(List<Integer> player2Hands) {this.player2Hands = player2Hands;}//プレイヤー2の手札をセット
+    public void setPlayer2Captures(List<Integer> player2Captures) {this.player2Captures = player2Captures;}//プレイヤー2の手札取り札をセット
+    public int getCurrentTurn() {return currentTurn;}//現在のターン数をゲット
+    public void setCurrentTurn(int currentTurn) {this.currentTurn = currentTurn;}//現在のターン数をセット
+    public void setIsKoikoi(boolean isKoikoi) {this.isKoikoi = isKoikoi;}//こいこいがどうかセット
+    public boolean getIsKoikoi(){return isKoikoi;}//自分がこいこいしてるかどうかゲット?????????
+    public void setIsEnd(boolean isEnd){this.isEnd = isEnd;}//ゲーム終了かどうかセット
+    public boolean getIsEnd(){return isEnd;}//ゲーム終了かどうかゲット
+    public PlayerInfo getSelfInfo() {return selfInfo;}//自分の情報をゲット
+    public PlayerInfo getOpponentInfo() {return opponentInfo;}//相手の情報をゲット
 
-    public List<Integer> getField() {
-        return field;
-    }
-
-    public void setField(List<Integer> field) {
-        this.field = field;
-    }
-
-    public List<Integer> getPlayer1Hands() {
-        return player1Hands;
-    }
-    
-    public List<Integer> getPlayer1Captures() {
-        return player1Captures;
-    }
-    public List<Integer> getPlayer2Hands() {
-        return player2Hands;
-    }
-    public List<Integer> getPlayer2Captures() {
-        return player2Captures;
-    }
-
-    public boolean getIsKoikoi(){
-        return isKoikoi;
-    }
-    public boolean getBotMode(){
-        return botMode;
-    }
-    public void setBotMode(boolean botMode){
-        this.botMode = botMode;
-    }
-
-    public void setPlayer1Hands(List<Integer> player1Hands) {
-        this.player1Hands = player1Hands;
-    }
-    public void setPlayer1Captures(List<Integer> player1Captures) {
-        this.player1Captures = player1Captures;
-    }
-    public void setPlayer2Hands(List<Integer> player2Hands) {
-        this.player2Hands = player2Hands;
-    }
-    public void setPlayer2Captures(List<Integer> player2Captures) {
-        this.player2Captures = player2Captures;
-    }
-
-    public int getCurrentTurn() {
-        return currentTurn;
-    }
-
-    public void setCurrentTurn(int currentTurn) {
-        this.currentTurn = currentTurn;
-    }
-
-    public void setIsKoikoi(boolean isKoikoi) {
-        this.isKoikoi = isKoikoi;
-    }
-    public void setIsEnd(boolean isEnd){
-        this.isEnd = isEnd;
-    }
-    public boolean getIsEnd(){
-        return isEnd;
-    }
-
-    private PlayerInfo parsePlayerInfo(String playerInfoString) {
-        //System.out.println("[DEBUG] サーバーから受信したプレイヤー情報: " + playerInfoString);
-        String cleaned = playerInfoString.replace("PlayerInfo{", "").replace("}", "");
-        // 各項目を分割
-        String[] parts = playerInfoString.split(", ");
-        if (parts.length < 3) {
-            throw new IllegalArgumentException("プレイヤー情報が不完全です: " + playerInfoString);
-        }
-        // 各項目を解析
-        String playerName = parts[0].split(": ")[1].trim(); // Name
-        int iconNum = Integer.parseInt(parts[1].split(": ")[1].trim()); // Icon
-        int level = Integer.parseInt(parts[2].split(": ")[1].trim()); // Level
-
-        return new PlayerInfo(playerName, iconNum, level);
-    }
-
-    public PlayerInfo getSelfInfo() {
-        return selfInfo;
-    }
-
-    public PlayerInfo getOpponentInfo() {
-        return opponentInfo;
-    }
-    public void fetchAndSetPlayerInfo(String response) {
+    public void fetchAndSetPlayerInfo(String response) {//サーバーから送られてきた PlayerInfoを設定
         try {
             // レスポンスを解析して情報を設定
             String[] infos = response.split("\n"); // 自分と相手の情報が改行で分かれていると仮定
@@ -139,12 +86,28 @@ public class GameController {
             System.err.println("[ERROR] プレイヤー情報の取得に失敗しました: " + e.getMessage());
         }
     }
-    public void parseGameState(String rawGameState) {
+    private PlayerInfo parsePlayerInfo(String playerInfoString) {//fetchAndSetPlayerInfoのサブ関数
+        String cleaned = playerInfoString.replace("PlayerInfo{", "").replace("}", "");
+        // 各項目を分割
+        String[] parts = playerInfoString.split(", ");
+        if (parts.length < 3) {
+            throw new IllegalArgumentException("プレイヤー情報が不完全です: " + playerInfoString);
+        }
+        // 各項目を解析
+        String playerName = parts[0].split(": ")[1].trim(); // Name
+        int iconNum = Integer.parseInt(parts[1].split(": ")[1].trim()); // Icon
+        int level = Integer.parseInt(parts[2].split(": ")[1].trim()); // Level
+
+        return new PlayerInfo(playerName, iconNum, level);
+    }
+    public void parseGameState(String rawGameState) {//サーバーから送られてきたゲーム情報をセット
+        if(field !=null && player2Hands != null){
+            previousField = new ArrayList<>(field);
+            previousOpponentHand = new ArrayList<>(player2Hands); // 相手の手札の前回の状態を保存
+        }
         
-        // System.out.println("[DEBUG] ゲーム状態: " + rawGameState);
         String[] lines = rawGameState.split("\n");
         for (String line : lines) {
-            // System.out.println("[DEBUG] 処理中の行: " + line);
             if (line.startsWith("Field:")) {
                 setField(parseCardList(line.substring(7)));
             } else if (line.startsWith("PlayerHand1 :")) {
@@ -158,9 +121,51 @@ public class GameController {
             } else if (line.startsWith("現在のターン:")) {
                 setCurrentTurn(Integer.parseInt(line.substring(7).trim()));
             }
-        }//refreshUI();
+        }
+        detectOpponentPlay(); // 変更を検知
     }
-    private void handlePlayerHands(int playerNumber, String cardData) {
+    private void detectOpponentPlay() {
+        if (currentTurn % 2 + 1 == playerId) {
+            resetOpponentState();
+            return;
+        } // 自分のターンでは何もしない
+        // 1. 手札の変化を確認
+        List<Integer> removedFromHand = new ArrayList<>(previousOpponentHand);
+        removedFromHand.removeAll(player2Hands);//差のみのこる
+        // 2. 場の変化を確認
+        List<Integer> addedToField = new ArrayList<>(field);
+        addedToField.removeAll(previousField);
+  
+        if (!removedFromHand.isEmpty()) {
+            if (opponentFirstPlayedCard == -1) {
+                opponentFirstPlayedCard = removedFromHand.get(0);
+                opponentFirstPlayedFieldCard = addedToField.isEmpty() ? -1 : addedToField.get(0);
+                System.out.println("[DEBUG] 1回目のプレイ - 手札から: " + opponentFirstPlayedCard + ", 場: " + opponentFirstPlayedFieldCard);
+                opponentPlayed = true; // アニメーション用フラグをセット
+            } else if (opponentSecondPlayedCard == -1) {
+                if (removedFromHand.size() > 1) removedFromHand.remove(opponentFirstPlayedCard);
+                
+                opponentSecondPlayedCard = removedFromHand.isEmpty() ? -1 : removedFromHand.get(0);
+                opponentSecondPlayedFieldCard = addedToField.isEmpty() ? -1 : addedToField.get(0);
+                // opponentSecondPlayedCard = removedFromHand.get(0);
+                // opponentSecondPlayedFieldCard = addedToField.isEmpty() ? -1 : addedToField.get(0);
+                System.out.println("[DEBUG] 2回目のプレイ - 山札から: " + opponentSecondPlayedCard + ", 場: " + opponentSecondPlayedFieldCard);
+                opponentPlayed = true; // アニメーション用フラグをセット
+            }
+            System.out.println("[DEBUG] opponentPlayed フラグを true に設定");
+            
+        }
+    }
+    public void resetOpponentState(){
+        opponentFirstPlayedCard = -1;
+        opponentFirstPlayedFieldCard = -1;
+        opponentSecondPlayedCard= -1;
+        opponentSecondPlayedFieldCard = -1;
+        resetOpponentPlayedFlag();
+        resetOpponentPlayCount();
+    }
+    
+    private void handlePlayerHands(int playerNumber, String cardData) {//parseGameStateのサブ関数　手札を設定
         List<Integer> hands = parseCardList(cardData);
         if (playerId == playerNumber) {
             setPlayer1Hands(hands);
@@ -168,9 +173,17 @@ public class GameController {
             setPlayer2Hands(hands);
         }
     }
-
-
-    private List<Integer> parseCardList(String cardString) {
+    private void handlePlayerCaptures(int playerNumber, String cardData) {//parseGameStateのサブ関数　取り札を設定
+        List<Integer> captures = parseCardList(cardData);
+        if (1 == playerNumber) {
+            setPlayer1Captures(captures);
+            // System.out.println("[DEBUG] 自分の取得カード (Player" + playerNumber + "): " + captures);
+        } else {
+            setPlayer2Captures(captures);
+            // System.out.println("[DEBUG] 相手の取得カード (Player" + playerNumber + "): " + captures);
+        }
+    }
+    private List<Integer> parseCardList(String cardString) {//parseGameStateのサブ関数のサブ関数　文字列をListに変更
         List<Integer> cardList = new ArrayList<>();
         String[] cardNumbers = cardString.split(",");
         for (String card : cardNumbers) {
@@ -186,41 +199,9 @@ public class GameController {
         }
         return cardList;
     }
-    private void handlePlayerCaptures(int playerNumber, String cardData) {
-        List<Integer> captures = parseCardList(cardData);
-        if (1 == playerNumber) {
-            setPlayer1Captures(captures);
-            // System.out.println("[DEBUG] 自分の取得カード (Player" + playerNumber + "): " + captures);
-        } else {
-            setPlayer2Captures(captures);
-            // System.out.println("[DEBUG] 相手の取得カード (Player" + playerNumber + "): " + captures);
-        }
-    }
-    public void setGameClient(GameClient gameClient) {
-        this.gameClient = gameClient;
-    }
-
-    public GameClient getGameClient() {
-        return gameClient;
-    }
-
-    public int getElapsedTime() {
-        return elapsedTime / 1000;
-    }
-
-    public boolean getIsActive() {
-        return isActive;
-    }
-
-    public int getPlayerId() {
-        return playerId;
-    }
+    public void setGameClient(GameClient gameClient) {this.gameClient = gameClient;}//GemeClientをセット
     
-    
-    
-    
-    // オンライン対戦開始
-    public void startOnlineMatch() {
+    public void startOnlineMatch() {// オンライン対戦開始
         try {
             boolean sessionInitialized =false;
             int maxAttempts = 10;
@@ -291,83 +272,5 @@ public class GameController {
             System.err.println("セッションの初期化に失敗しました: " + e.getMessage());
         }
     }
-    public void fetchState(){
-        try {
-            gameClient.fetchGameStateAsync();
-        }catch(Exception e){
-            System.err.println("fetchStateにエラーが発生しました: " + e.getMessage());
-                e.printStackTrace();
-        }
-        
-    }
-    public void startPlayCardTest() {
-            try {
-                playCount++;
-                if (gameClient == null) {
-                    System.out.println("ゲームコントローラーまたはクライアントが未初期化です。");
-                    return;
-                }
-                System.out.println("プレイヤーID"+playerId);
-                if((currentTurn % 2) == playerId % 2 ){
-                    System.out.println("あなたのターンではありません"+currentTurn);
-                    return;
-                }
-                if(playCount >= 2){
-                    System.out.println("あなたのターンではありません"+currentTurn);
-                }
-                // 手札と場札を取得
-                List<Integer> hand = player1Hands;
-                List<Integer> fields = field;
-                int selectedHandCardId = -1;
-                if(playCount == 1){
-                    selectedHandCardId = hand.get(hand.size()-1);
-                }else{
-                    // 手札の0番目のカードを選択
-                    selectedHandCardId = hand.get(0);
-                }
-
-                // // サーバーからゲーム状態を取得
-                // gameClient.fetchGameState();
-
-                
-
-                if (hand.isEmpty()) {
-                    System.out.println("手札が空です。テストを終了します。");
-                    return;
-                }
-
-                
-
-                // 場札から同じカードを探す
-                int selectedFieldCardId = -1; // デフォルトは -1
-                for (int fieldCardId : fields) {
-                    if (fieldCardId/4 == selectedHandCardId/4) {
-                        selectedFieldCardId = fieldCardId;
-                        break;
-                    }
-                }
-
-                // playCard メソッドを呼び出す
-                System.out.println("選択した手札のカードID: " + selectedHandCardId);
-                System.out.println("選択した場のカードID: " + selectedFieldCardId);
-                
-                gameClient.playCard(selectedHandCardId, playerId, selectedFieldCardId);//ここ
-
-            } catch (Exception ex) {
-                System.err.println("仮関数中にエラーが発生しました: " + ex.getMessage());
-                ex.printStackTrace();
-            }
-        
-
-    }
-
-    public void sendMessage(){
-        try {
-            gameClient.sendNextTurnMessage("Test");
-        } catch (Exception e) {
-            System.err.println("メッセージ送信エラー: " + e.getMessage());
-        }
-        
-    }
-    
 }
+

@@ -5,16 +5,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.Random;
 public class HanahudaGameLogic {
-    // **スレッドプールを作成**
+    //スレッドプールを作成
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private Game game;
     private int playCount = 0; // 現在のターンでのプレイ回数
     private Random random = new Random(); // **ここで1つだけ作成**
     private boolean botMode;
     
-    public Game getGame(){
-        return game;
-    }
+    public Game getGame(){return game;}//
+    public void setBotMode(boolean botMode){this.botMode = botMode;}
+    public boolean getBouMode(){return botMode;}
 
     public void resetGame() {
         Deck deck = new Deck();
@@ -23,15 +23,12 @@ public class HanahudaGameLogic {
         game.setCurrentPlayerIndex(1);
         System.out.println("ゲーム開始！ 配札完了！");
     }
-    public void setBotMode(boolean botMode){
-        this.botMode = botMode;
-    }
-    public boolean getBouMode(){
-        return botMode;
-    }
+   
 
     //PLAY_CARDで呼ばれる関数。
     public String processPlayerAction(int playerIndex, int handCardId, int fieldCardId) {
+        Player currentPlayer = game.getPlayers().get(playerIndex == 2 ? 1 : 0);
+        RoleResult previousRoleResult = currentPlayer.getRoleResult();
 
         if (playerIndex != game.getCurrentPlayerIndex()) {
             return "ERROR: 現在のプレイヤーではありません。";
@@ -40,30 +37,25 @@ public class HanahudaGameLogic {
         game.incrementPlayCount();
 
         if (game.getPlayCount() >= 2) {
-            return checkAndHandleKoiKoi(playerIndex);
+            RoleResult newRoleResult = RoleChecker.checkRules(currentPlayer);
+            currentPlayer.setRoleResult(newRoleResult);
+
+            if (!newRoleResult.getAchievedRoles().isEmpty() &&
+                !previousRoleResult.getAchievedRoles().containsAll(newRoleResult.getAchievedRoles())) {
+                
+                currentPlayer.setKoiKoi(true);
+                return "KOIKOI_WAITING: 役が成立しました。「こいこい」を選択してください。\n" +
+                    "役: " + newRoleResult.getAchievedRoles() + "\n" +
+                    "得点: " + newRoleResult.getTotalScore();
+            }
+
+            currentPlayer.setKoiKoi(false);
+            return game.getIsEnd() ? "GAME_END: 相手の勝利。" : "NEXT_TURN: ターン " + game.getCurrentTurn();
+        
         }
         return "CONTINUE_TURN: プレイヤー " + playerIndex + " のターンが継続中です。\n" + playResult;
     }
 
-    // こいこい判定用のメソッド
-    private String checkAndHandleKoiKoi(int playerIndex) {
-        Player currentPlayer = game.getPlayers().get(playerIndex == 2 ? 1 : 0);
-        RoleResult previousRoleResult = currentPlayer.getRoleResult();
-        RoleResult newRoleResult = RoleChecker.checkRules(currentPlayer);
-        currentPlayer.setRoleResult(newRoleResult);
-
-        if (!newRoleResult.getAchievedRoles().isEmpty() &&
-            !previousRoleResult.getAchievedRoles().containsAll(newRoleResult.getAchievedRoles())) {
-            
-            currentPlayer.setKoiKoi(true);
-            return "KOIKOI_WAITING: 役が成立しました。「こいこい」を選択してください。\n" +
-                "役: " + newRoleResult.getAchievedRoles() + "\n" +
-                "得点: " + newRoleResult.getTotalScore();
-        }
-
-        currentPlayer.setKoiKoi(false);
-        return game.getIsEnd() ? "GAME_END: 相手の勝利。" : "NEXT_TURN: ターン " + game.getCurrentTurn();
-    }
 
     //processPlayerActionの補助関数
     public String handleCardPlay(int playerIndex, int cardId,int fieldcard) {//プレイヤーの指定したカードを処理し、ゲームの進行を行う。
@@ -112,7 +104,7 @@ public class HanahudaGameLogic {
             result += "プレイヤー 1 の得点: " + score1 + result1+"\n";
         }
 
-        if(!plater2.isKoiKoi()){
+        if(!player2.isKoiKoi()){
             result += "プレイヤー 2 の得点: " + score2 + result2+"\n";
         }
 
@@ -141,10 +133,12 @@ public class HanahudaGameLogic {
         }
         
     }
-    // **BOTのターンかどうかを判定**
+
+    //BOTのターンかどうかを判定
     private boolean isBotTurn(int playerId) {
         return playerId == 2;//2はコンピュータのターン
     }
+    //
     private void playBotTurn(int botPlayerId) {
         System.out.println("BOTのターンです。");
         Player player = game.getPlayers().get(botPlayerId - 1);
@@ -177,10 +171,11 @@ public class HanahudaGameLogic {
     }
 
     public int chooseBestCardIndex(List<Card> playerHand, List<Card> playerTaken, List<Card> tableCards) {
+
         return playerHand.get(0).getId();
     }
     
-    // **場にあるカードと一致するカードを探す**
+    // 
     private int findMatchingCardInField(Field field, int cardId) {
         List<Card> fieldCards = field.getCards();
         for (Card card : fieldCards) {

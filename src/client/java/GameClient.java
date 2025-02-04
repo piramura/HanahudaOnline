@@ -18,13 +18,9 @@ public class GameClient {
     private static final int TURN_DELAY = 3000; // **ターン移行の遅延（3秒）**
 private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
-    // コンストラクタでURLを受け取る
-    public GameClient(String serverUrl) {
-        this.serverUrl = serverUrl; // デフォルト値を設定
-    }
-    public void setGameController(GameController controller){
-        this.controller = controller;
-    }
+    
+    public GameClient(String serverUrl) {this.serverUrl = serverUrl;}// コンストラクタでURLを受け取る
+    public void setGameController(GameController controller){this.controller = controller;}//GameController
     //補助メソッド
     private HttpRequest buildRequest(String endpoint, String method, String body) throws URISyntaxException {
         HttpRequest.Builder builder = HttpRequest.newBuilder()
@@ -40,8 +36,8 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
     
         return builder.build();
     }
-    // セッションIDを取得
-    public void initializeSession(String passphrase) throws Exception {
+    
+    public void initializeSession(String passphrase) throws Exception {// セッションIDを取得　POST
         System.out.println(passphrase);
         HttpRequest request = HttpRequest.newBuilder()
             .uri(new URI(serverUrl + "/session"))
@@ -57,8 +53,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             throw new RuntimeException("セッションID取得エラー: " + response.statusCode());
         }
     }
-    //playerIdを取得
-    public int fetchPlayerId() throws Exception {
+    public int fetchPlayerId() throws Exception {//playerIdを取得　GET
         HttpRequest request = buildRequest("/game/playerId", "GET", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
@@ -67,8 +62,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             throw new RuntimeException("プレイヤーID取得エラー: " + response.statusCode());
         }
     }
-    //自分の情報を送る
-    public void sendPlayerInfo(String playerName, int iconNum, int level) throws Exception {
+    public void sendPlayerInfo(String playerName, int iconNum, int level) throws Exception {//自分の情報を送る　POST
         String message = String.format("%s:%d:%d", playerName, iconNum, level);
         HttpRequest request = buildRequest("/game/player", "POST", message);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
@@ -78,8 +72,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             throw new RuntimeException("Failed to send player info: " + response.statusCode());
         }
     }
-    //相手の情報を取り出す
-    public String fetchPlayerInfo() throws Exception {
+    public String fetchPlayerInfo() throws Exception {//相手の情報を取り出す　GET
         HttpRequest request = buildRequest("/game/player", "GET", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         System.out.println("サーバーのレスポンス: " + response.body()); // 追加
@@ -92,8 +85,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             throw new RuntimeException("Failed to fetch player info: " + response.statusCode());
         }
     }
-    // 準備完了通知これいる？
-    public void ready() throws Exception {
+    public void ready() throws Exception {// 準備完了通知　POST
         System.out.println("準備完了通知送信URL: " + serverUrl + "/game/ready");
         HttpRequest request = buildRequest("/game/ready", "POST", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
@@ -103,7 +95,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             throw new RuntimeException("準備完了通知エラー: " + response.statusCode());
         }
     }
-    public boolean isGameStarted() throws Exception {
+    public boolean isGameStarted() throws Exception {//ゲーム開始かどうかPOST
         HttpRequest request = buildRequest("/game/ready", "POST", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
     
@@ -115,8 +107,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             throw new RuntimeException("準備完了確認エラー: " + response.statusCode());
         }
     }
-    // ゲーム状態取得
-    public void fetchGameState() throws Exception {
+    public void fetchGameState() throws Exception {// ゲーム状態取得　GET
         HttpRequest request = buildRequest("/game/state", "GET", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
@@ -139,10 +130,9 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             throw new RuntimeException("ゲーム状態取得エラー: " + response.statusCode());
         }
     }
-    //非同期処理版
-    public void fetchGameStateAsync() {
-        HttpRequest request;
     
+    public void fetchGameStateAsync() {//非同期処理版ゲーム状態取得 GET
+        HttpRequest request;
         try {
             request = buildRequest("/game/state", "GET", null);
         } catch (URISyntaxException e) {
@@ -172,9 +162,8 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
                 return null;
             });
     }
-    
 
-    public void playCard(int cardInfo, int playerId, int fieldCardId) {
+    public void playCard(int cardInfo, int playerId, int fieldCardId) {//カードをプレイ　POST
         String message = String.format("PLAY_CARD:%d:%d:%d", cardInfo, fieldCardId, playerId);
         HttpRequest request;
         try {
@@ -204,9 +193,8 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
                 return null;
             });
     }
-    
+    //ここからPlayCardの補助関数
     private void continueYourTurn(){
-        //もう一枚処理してって命令を送る。なんでも書いていいよ
         try{
             System.out.println("continueYourTurn処理中");
             fetchGameState();
@@ -214,9 +202,33 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             System.err.println("continueYourTurnの fetchGameState()でEROOR");
         }
 
-        //二回目のカード選びに移るPLAYCARDを頼みます。
-
     }
+    private void handleKoiKoiSelection(String responseBody) {
+        System.out.println("こいこい待機中:テスト用で、KOIKOIと " + responseBody);
+        controller.setIsKoikoi(true);
+        try{
+            // sendNextTurnMessage("KOIKOI");
+        }catch(Exception e){
+            System.err.println("sendNextTurnMessage(\"KOIKOI\")でエラー");
+        }
+    }
+    private void handleNextTurn(String responseBody) {
+        System.out.println("次のターンに進みます: " + responseBody);
+    
+        // **遅延を入れて次のターンへ**
+        scheduler.schedule(() -> {
+            try {
+                sendNextTurnMessage("NEXT_TURN");
+                System.out.println("次のターンが開始されました！");
+            } catch (Exception e) {
+                System.err.println("sendNextTurnMessage(\"NEXT_TURN\") でエラー: " + e.getMessage());
+            }
+        }, TURN_DELAY, TimeUnit.MILLISECONDS);
+    }
+    private void handleGameEnd(String responseBody) {
+        System.out.println("ゲーム終了: " + responseBody);
+    }
+    //PlayCardの補助関数ここまで
     public void sendNextTurnMessage(String answer)throws Exception {
         // answer は "KOIKOI"  か "END" のいずれかを送信
         String message = String.format("%s", answer);
@@ -249,38 +261,8 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             });
     
     }
-    
-    //ここからPlayCardの補助関数
-    private void handleKoiKoiSelection(String responseBody) {
-        System.out.println("こいこい待機中:テスト用で、KOIKOIと " + responseBody);
-        controller.setIsKoikoi(true);
-        try{
-            // sendNextTurnMessage("KOIKOI");
-        }catch(Exception e){
-            System.err.println("sendNextTurnMessage(\"KOIKOI\")でエラー");
-        }
-    }
 
-    private void handleNextTurn(String responseBody) {
-        System.out.println("次のターンに進みます: " + responseBody);
-    
-        // **遅延を入れて次のターンへ**
-        scheduler.schedule(() -> {
-            try {
-                sendNextTurnMessage("NEXT_TURN");
-                System.out.println("次のターンが開始されました！");
-            } catch (Exception e) {
-                System.err.println("sendNextTurnMessage(\"NEXT_TURN\") でエラー: " + e.getMessage());
-            }
-        }, TURN_DELAY, TimeUnit.MILLISECONDS);
-    }
-
-    private void handleGameEnd(String responseBody) {
-        System.out.println("ゲーム終了: " + responseBody);
-    }
-    //PlayCardの補助関数ここまで
-
-    public void disconnect() throws Exception {
+    public void disconnect() throws Exception {//切断処理　POST
         HttpRequest request = buildRequest("/session/terminate", "POST", null);
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
@@ -289,7 +271,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             System.err.println("切断通知エラー: " + response.statusCode());
         }
     }
-    public void getResultFromServerAsync() throws Exception {
+    public void getResultFromServerAsync() throws Exception {//ゲーム結果を取得　GET
         HttpRequest request = buildRequest("/game/result", "GET", null);
     
         CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
@@ -303,6 +285,4 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
                 return null; // 例外時には `null` を返して処理を続行
             });
     }
-    
-    
 }

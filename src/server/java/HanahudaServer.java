@@ -28,7 +28,6 @@ public class HanahudaServer {
         server.createContext("/game/next", new NextTurnHandler(gameSessionManager));
         server.createContext("/game/player", new PlayerHandler(gameSessionManager));
         server.createContext("/game/result", new GameResultHandler(gameSessionManager));
-        server.createContext("/game/computerTurn", new ComputerTurnHandler(gameSessionManager));
 
 
 
@@ -301,19 +300,16 @@ class PlayerHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         String method = exchange.getRequestMethod();
-
         // プレイヤー情報の登録/更新 (POST)
         if ("POST".equalsIgnoreCase(method)) {
             handlePost(exchange);
             return;
         }
-
         // プレイヤー情報の取得 (GET)
         if ("GET".equalsIgnoreCase(method)) {
             handleGet(exchange);
             return;
         }
-
         exchange.sendResponseHeaders(405, -1); // Method Not Allowed
     }
 
@@ -415,28 +411,6 @@ class GameResultHandler implements HttpHandler {
 
     private void sendResponse(HttpExchange exchange, int statusCode, String response) throws IOException {
         exchange.sendResponseHeaders(statusCode, response.getBytes().length);
-        try (OutputStream os = exchange.getResponseBody()) {
-            os.write(response.getBytes());
-        }
-    }
-}
-class ComputerTurnHandler implements HttpHandler {
-    private GameSessionManager gameSessionManager;
-
-    public ComputerTurnHandler(GameSessionManager gameSessionManager) {
-        this.gameSessionManager = gameSessionManager;
-    }
-
-    @Override
-    public void handle(HttpExchange exchange) throws IOException {
-        if (!"POST".equals(exchange.getRequestMethod())) {
-            exchange.sendResponseHeaders(405, -1);
-            return;
-        }
-
-        gameSessionManager.processComputerTurn();
-        String response = "コンピュータのターンが処理されました";
-        exchange.sendResponseHeaders(200, response.getBytes().length);
         try (OutputStream os = exchange.getResponseBody()) {
             os.write(response.getBytes());
         }

@@ -447,6 +447,7 @@ class OnlineGame extends JPanel {
                             cardState[takeOpponentCard.get(i)] = 5;
                         }
                         updateState();
+                        
                     }
                 }
                 else{
