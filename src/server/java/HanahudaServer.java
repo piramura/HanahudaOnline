@@ -146,7 +146,7 @@ class SessionHandler implements HttpHandler {
         // セッションIDを発行
         String sessionId = java.util.UUID.randomUUID().toString();
         gameSessionManager.addClient(sessionId, isBotMatch); // ここでBOT戦かどうかも登録
-
+        //ぼっとせんならreadyとかもこっちで自動処理。
         System.out.println("セッションIDを発行: " + sessionId + " (BOT戦: " + isBotMatch + ")");
 
         
@@ -277,6 +277,7 @@ class NextTurnHandler implements HttpHandler {
             }
             return;
         } else if ("END".equals(body)) {
+            gameSessionManager.resetKoiKoi(sessionId);
             gameSessionManager.endGame();
             System.out.println("response = GAME_END: ゲーム終了");
             response = "GAME_END: ゲーム終了";

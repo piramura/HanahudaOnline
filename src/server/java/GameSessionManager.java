@@ -14,7 +14,7 @@ public class GameSessionManager {
         botSessions.add(sessionId);
         clientSessions.put(sessionId, 1); // プレイヤー1として登録
         clientSessions.put("BOT", 2); // BOTをプレイヤー2として登録
-        clientReadyStates.put(sessionId, true);
+        clientReadyStates.put(sessionId, false);
         clientReadyStates.put("BOT", true);
         gamelogic.setBotMode(true);
         System.out.println("BOT戦のセッションを登録しました: " + sessionId);
@@ -233,6 +233,18 @@ public class GameSessionManager {
     }
     public void resetKoiKoiWaiting(){
         gamelogic.resetIsKoiKoiWaiting();
-        System.out.println("こいこい待機状態を解除");
+        System.out.println("こいこいするときのこいこい待機状態を解除");
     }
+    public synchronized void resetKoiKoi(String sessionId) {
+        Integer playerNumber = clientSessions.get(sessionId);
+        if (playerNumber == null) {
+            System.err.println("ERROR: セッションID " + sessionId + " に対応するプレイヤーが見つかりません");
+            return;
+        }
+        Player player = gamelogic.getGame().getPlayers().get(playerNumber - 1);
+        player.setKoiKoi(false);
+        gamelogic.resetIsKoiKoiWaiting(); // こいこい待機状態を解除
+        System.out.println("勝負あった時のこいこい状態をリセット: プレイヤー " + playerNumber);
+    }
+    
 }

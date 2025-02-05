@@ -1090,6 +1090,7 @@ class M_OnlineGame extends JPanel {
         } catch (Exception ev){
             ev.printStackTrace();
         }
+        controller.setIsKoikoi(false);
         isKOIKOI = false;
     }
 
@@ -1099,6 +1100,7 @@ class M_OnlineGame extends JPanel {
         } catch (Exception ev){
             ev.printStackTrace();
         }
+        controller.setIsKoikoi(false);
         isKOIKOI = false;
         try {
             //controller.getGameClient().disconnect();

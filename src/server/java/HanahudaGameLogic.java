@@ -14,6 +14,7 @@ public class HanahudaGameLogic {
     private boolean isKoiKoiWaiting;
     private int lastScoringPlayer = -1; // 最後に役を成立させたプレイヤーのID
     private RoleResult previousRoleResult;
+    private boolean botFinish = false;
     
     public Game getGame(){return game;}//
     public void setBotMode(boolean botMode){this.botMode = botMode;}
@@ -72,7 +73,6 @@ public class HanahudaGameLogic {
                     "得点: " + newRoleResult.getTotalScore();
             }
             
-            currentPlayer.setKoiKoi(false);
             return game.getIsEnd() ? "GAME_END: 相手の勝利。" : "NEXT_TURN: ターン " + game.getCurrentTurn();
         
         }
@@ -111,10 +111,11 @@ public class HanahudaGameLogic {
     public String determineWinner() {
         Player player1 = game.getPlayers().get(0);
         Player player2 = game.getPlayers().get(1);
-    
+        System.out.println("player1.isKoiKoi()"+ player1.isKoiKoi());
+        System.out.println("player2.isKoiKoi()"+player2.isKoiKoi());
         int score1 = player1.getRoleResult().getTotalScore();
         int score2 = player2.getRoleResult().getTotalScore();
-    
+        System.out.println("lastScoringPlayer"+lastScoringPlayer);
         // **最後に役を成立させたプレイヤー以外のスコアを0にする**
         if (lastScoringPlayer == 1) {
             score2 = 0;
@@ -125,11 +126,17 @@ public class HanahudaGameLogic {
             score1 = 0;
             score2 = 0;
         }
-    
+        // こいこいをしたプレイヤーのスコア処理
+        if (player1.isKoiKoi()) {
+            score1 = 0;
+        }
+        if (player2.isKoiKoi()) {
+            score2 = 0;
+        }
+        
         String result = "ゲーム終了！\n";
         result += "プレイヤー 1 の得点: " + score1 + "\n";
         result += "プレイヤー 2 の得点: " + score2 + "\n";
-    
         if (score1 > score2) {
             result += "プレイヤー 1 の勝利！";
         } else if (score2 > score1) {
@@ -162,48 +169,57 @@ public class HanahudaGameLogic {
     private boolean isBotTurn(int playerId) {
         return playerId == 2;//2はコンピュータのターン
     }
-    //
+    //BOTのプレイ
     private void playBotTurn(int botPlayerId) {
         System.out.println("BOTのターンです。");
         Player bot = game.getPlayers().get(botPlayerId - 1);
-        RoleResult preResult = RoleChecker.checkRules(bot);
         game.resetPlayCount();
-        // 1回目のプレイ
+
+        // **1回目のプレイ**
         scheduler.schedule(() -> {
-            //最適な手札のカードと場のカードを選ぶ
             int[] bestMove = chooseBestMove(bot, game.getField());
             int bestCardId = bestMove[0];
             int bestFieldCardId = bestMove[1];
-            System.out.println("1回目プレイ"+ bestCardId +":"+ bestFieldCardId);
+
+            System.out.println("1回目プレイ: " + bestCardId + " -> " + bestFieldCardId);
             System.out.println(handleCardPlay(2, bestCardId, bestFieldCardId));
             game.incrementPlayCount();
         }, 500, TimeUnit.MILLISECONDS);
-        // 2回目のプレイ（場の更新を待つ）
+
+        // **2回目のプレイ（場の更新を待つ）**
         scheduler.schedule(() -> {
-            Card handCard = bot.getHand().get(bot.getHand().size()-1);
+            Card handCard = bot.getHand().get(bot.getHand().size() - 1);
             int handCardId = handCard.getId();
             int fieldCardId = chooseBestFieldCard(bot, game.getField(), handCard);
-            System.out.println("2回目プレイ"+ handCardId+":"+ fieldCardId);
+
+            System.out.println("2回目プレイ: " + handCardId + " -> " + fieldCardId);
             System.out.println(handleCardPlay(2, handCard.getId(), fieldCardId));
             game.incrementPlayCount();
-            scheduler.schedule(() -> nextTurn(), 500, TimeUnit.MILLISECONDS);
+
+            // **役のチェックを遅延実行（プレイ後に判定する）**
+            scheduler.schedule(() -> {
+                if (game.getPlayCount() >= 2) {
+                    RoleResult newResult = RoleChecker.checkRules(bot);
+                    bot.setRoleResult(newResult);
+
+                    if (!botFinish && newResult.getAchievedRoles().size() > 0) {
+                        botFinish = true;
+                        lastScoringPlayer = botPlayerId;
+                    }
+
+                    game.resetPlayCount();
+
+                    if (botFinish) {
+                        System.out.println("BOTが役を達成したためゲーム終了");
+                        endGame();
+                        return;
+                    }
+                }
+                nextTurn();
+            }, 500, TimeUnit.MILLISECONDS);
         }, 5000, TimeUnit.MILLISECONDS);
-
-
-        if(game.getPlayCount()>=2){
-            RoleResult newResult = RoleChecker.checkRules(bot);
-            boolean isUpScore = false; 
-            if (preResult.getAchievedRoles().size() < newResult.getAchievedRoles().size()) {
-                isUpScore = true;
-            }
-            bot.setRoleResult(newResult);
-            game.resetPlayCount();
-            if(isUpScore){
-                endGame();
-                //botがゲームエンド
-            }
-        }
     }
+
     private int findMatchingCardInField(Field field, int cardId) {
         List<Card> fieldCards = field.getCards();
         for (Card card : fieldCards) {

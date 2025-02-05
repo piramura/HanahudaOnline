@@ -182,8 +182,8 @@ class M_Lobby extends JPanel {
     public void Online() {
         AppPreferences.putString("プレイヤー名", c_Lobby.getPlayerNameInputField().getText());
         gameController = new GameController();
-        client = new GameClient("https://hanahudaonline.onrender.com");
-        //client = new GameClient("http://localhost:10030");
+        //client = new GameClient("https://hanahudaonline.onrender.com");
+        client = new GameClient("http://localhost:10030");
         client.setGameController(gameController);
         gameController.setGameClient(client);
         gameController.setBotMode(false);
@@ -194,8 +194,8 @@ class M_Lobby extends JPanel {
     public void Computer(){
         AppPreferences.putString("プレイヤー名", c_Lobby.getPlayerNameInputField().getText());
         gameController = new GameController();
-        client = new GameClient("https://hanahudaonline.onrender.com");
-        //client = new GameClient("http://localhost:10030");
+        //client = new GameClient("https://hanahudaonline.onrender.com");
+        client = new GameClient("http://localhost:10030");
         client.setGameController(gameController);
         gameController.setGameClient(client);
         gameController.setBotMode(true);

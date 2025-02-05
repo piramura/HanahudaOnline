@@ -35,7 +35,7 @@ public class GameController {
     private boolean opponentPlayed = false; // UIに通知するためのフラグ
     private int opponentPlayCount;
     private boolean isGameStarted;
-    private int[] roleIds = new int[0]; // 初期化
+    private int[] roleIds = new int[0];
     private int rolePoint = 0;
     public int[] getRoleIdArray(){return roleIds;}
     public int getRolePoint(){return rolePoint;}
@@ -156,9 +156,9 @@ public class GameController {
                 if (!addedToField.isEmpty()) {
                     opponentFirstPlayedFieldCard = addedToField.get(0); // **場に置いた**
                 } else if (!removedFromField.isEmpty()) {
-                    opponentFirstPlayedFieldCard = removedFromField.get(0); // **場から取った**
+                    opponentFirstPlayedFieldCard = removedFromField.get(0); // 場から取った
                 } else {
-                    opponentFirstPlayedFieldCard = -1; // **場に変化なし**
+                    opponentFirstPlayedFieldCard = -1; //場に変化なし
                 }
                 System.out.println("[DEBUG] 1回目のプレイ修正前 - 手札から: " + opponentFirstPlayedCard + ", 場: " + opponentFirstPlayedFieldCard);
                 if(opponentFirstPlayedCard == opponentFirstPlayedFieldCard){
