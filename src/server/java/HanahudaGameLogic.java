@@ -15,7 +15,16 @@ public class HanahudaGameLogic {
     private int lastScoringPlayer = -1; // 最後に役を成立させたプレイヤーのID
     private RoleResult previousRoleResult;
     private boolean botFinish = false;
-    
+    private String disconnectMessage = ""; // 切断通知を保存
+
+    public void setDisconnectMessage(String message) {
+        this.disconnectMessage = message;
+    }
+
+    public String getDisconnectMessage() {
+        return disconnectMessage;
+    }
+
     public Game getGame(){return game;}//
     public void setBotMode(boolean botMode){this.botMode = botMode;}
     public boolean getBouMode(){return botMode;}
@@ -133,19 +142,21 @@ public class HanahudaGameLogic {
         if (player2.isKoiKoi()) {
             score2 = 0;
         }
-        
-        String result = "ゲーム終了！\n";
-        result += "プレイヤー 1 の得点: " + score1 + "\n";
-        result += "プレイヤー 2 の得点: " + score2 + "\n";
+        int winnerStatus;
+        String winnerMessage;
+
         if (score1 > score2) {
-            result += "プレイヤー 1 の勝利！";
+            winnerStatus = 1; // プレイヤー1の勝利
+            winnerMessage = "勝利";
         } else if (score2 > score1) {
-            result += "プレイヤー 2 の勝利！";
+            winnerStatus = 2; // プレイヤー2の勝利
+            winnerMessage = "勝利";
         } else {
-            result += "引き分け！";
+            winnerStatus = 0; // 引き分け
+            winnerMessage = "引き分け";
         }
-    
-        return result;
+
+        return winnerStatus + "," + winnerMessage; // 「1,プレイヤー 1 は勝利」 のような形式で返す
     }
     
     //これらはパブリックで管理される。

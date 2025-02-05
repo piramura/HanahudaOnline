@@ -41,7 +41,6 @@ public class HanahudaServer {
         GameSessionManager gameSessionManager = new GameSessionManager();
         System.out.println("ゲームセッションがリセットされました。次のプレイヤーを待っています...");
     }
-    
 }
 
 

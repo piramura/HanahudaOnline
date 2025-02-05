@@ -111,7 +111,15 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
         HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         if (response.statusCode() == 200) {
             String responseBody = response.body(); // レスポンスの内容を取得
-
+            //切断通知が含まれているかチェック
+            if (responseBody.contains("DISCONNECT:")) {
+                String[] lines = responseBody.split("\n");
+                for (String line : lines) {
+                    if (line.startsWith("DISCONNECT:")) {
+                        System.out.println("[通知] " + line); // プレイヤーの切断を表示
+                    }
+                }
+            }
             if (responseBody.startsWith("GAME_END") && !controller.getIsEnd()) { 
                 controller.setIsEnd(true);
                 getResultFromServerAsync();
@@ -223,7 +231,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
     }
     //PlayCardの補助関数ここまで
     public void sendNextTurnMessage(String answer)throws Exception {
-        // answer は "KOIKOI"  か "END" のいずれかを送信
+        // answer は "KOIKOI"  か "END" か"NEXT"のいずれかを送信
         String message = String.format("%s", answer);
         System.out.println("messageを作成 " + message);
         HttpRequest request = buildRequest("/game/next", "POST", message);
@@ -269,6 +277,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
         CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
             .thenApply(HttpResponse::body)
             .thenAccept(resultData -> {
+                
                 controller.setResult(resultData);
                 System.err.println("resultDataをset: " + resultData);
             })

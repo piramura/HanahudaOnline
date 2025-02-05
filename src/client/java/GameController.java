@@ -37,6 +37,8 @@ public class GameController {
     private boolean isGameStarted;
     private int[] roleIds = new int[0];
     private int rolePoint = 0;
+    private boolean isDisconnect = false;
+
     public int[] getRoleIdArray(){return roleIds;}
     public int getRolePoint(){return rolePoint;}
     public void incrementOpponentPlayCount(){opponentPlayCount++;}//opponentPlayCountを進める
@@ -53,7 +55,26 @@ public class GameController {
     public int getOpponentSecondPlayedFieldCard() {return opponentSecondPlayedFieldCard;}// 相手の2回目のプレイ場のindex
     public boolean hasOpponentPlayed() {return opponentPlayed;}// UIに通知するためのフラグ
     public void resetOpponentPlayedFlag() {opponentPlayed = false;}// UIに通知したらリセット
-    public void setResult(String result) {this.resultData = result;}//ゲーム結果をセット
+    public void setResult(String serverResponse) {
+        String[] parts = serverResponse.split(",");
+
+        int status = Integer.parseInt(parts[0]); // 勝敗ステータス（0,1,2）
+        String message = parts[1]; // 勝敗メッセージ
+        String result;
+        // クライアント側で表示
+        if (status == playerId) {
+            result = "勝利";
+            System.out.println("あなたの勝利！ 相手の敗北");
+        } else if (status != playerId) {
+            result = "敗北";
+            System.out.println("あなたの敗北… 相手の勝利");
+        } else {
+            result = "引き分け";
+            System.out.println("引き分け！");
+        }
+        this.resultData = result;
+    
+    }//ゲーム結果をセット
     public String getResult(){return resultData;}//ゲーム結果をゲット
     public void setField(List<Integer> field) {this.field = field;}//場のリストをセット
     public List<Integer> getField() {return field;}//場のリストをゲット
@@ -112,7 +133,16 @@ public class GameController {
         if(player2Captures != null){previousOpponentCaptures = new ArrayList<>(player2Captures);}
         
          // 相手の手札の前回の状態を保存
-        
+        // 切断通知が含まれているかチェック
+        if (rawGameState.contains("DISCONNECT:")) {
+            String[] tmplines = rawGameState.split("\n");
+            for (String line : tmplines) {
+                if (line.startsWith("DISCONNECT:")) {
+                    this.isDisconnect = true;
+                    System.out.println("[通知] " + line); // プレイヤーの切断を表示
+                }
+            }
+        }
         String[] lines = rawGameState.split("\n");
         for (String line : lines) {
             if (line.startsWith("Field:")) {
@@ -237,6 +267,7 @@ public class GameController {
     
     public void startOnlineMatch() {// オンライン対戦開始
         try {
+            isDisconnect = false;
             isGameStarted = false;
             boolean sessionInitialized =false;
             int maxAttempts = 10;
@@ -347,7 +378,7 @@ public class GameController {
     private int[] parseRolesFromServer(String roleString) {
         Map<String, Integer> roleMapping = new HashMap<>();
         roleMapping.put("五光", 1);
-        roleMapping.put("雨四光", 2);
+        roleMapping.put("雨入り四光", 2);
         roleMapping.put("四光", 3);
         roleMapping.put("三光", 4);
         roleMapping.put("花見で一杯", 5);

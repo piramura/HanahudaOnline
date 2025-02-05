@@ -180,7 +180,12 @@ public class GameSessionManager {
         //
         gameState.append("現在のターン: ").append(game.getCurrentTurn()).append("\n");
         gameState.append("\n");
-        
+        //切断通知がある時はこれ
+        String disconnectMessage = gamelogic.getDisconnectMessage();
+        if (!disconnectMessage.isEmpty()) {
+            gameState.append("\n").append(disconnectMessage);
+            gamelogic.setDisconnectMessage(""); // 1回通知したらリセット
+        }
         //System.out.println("DEBUG ゲーム状態: " + gameState);
         return gameState.toString();
     }
@@ -195,6 +200,17 @@ public class GameSessionManager {
         Integer playerNumber = clientSessions.remove(sessionId); // セッションを削除
         if (playerNumber != null) {
             System.out.println("セッションID " + sessionId + " のプレイヤー " + playerNumber + " を削除しました。");
+            // 切断通知メッセージを作成
+            String disconnectMessage = "DISCONNECT: プレイヤー " + playerNumber + " が切断しました。";
+            //切断通知を全クライアントの gameState に含める
+            gamelogic.setDisconnectMessage(disconnectMessage);
+            //ぼっとモードならすぐリセット。
+            if (isBotMatch(sessionId)) {
+                System.out.println("BOTモードのため、即ゲームリセットを実行します。");
+                resetAllStates();
+                HanahudaServer.resetGameSession();
+                return true;
+            }    
             // ➡️ すべてのセッションが削除された場合
             if (clientSessions.isEmpty()) {
                 System.out.println("すべてのプレイヤーが切断されました。ゲームセッションをリセットします。");
