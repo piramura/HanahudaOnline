@@ -17,6 +17,9 @@ public class GameSessionManager {
         clientReadyStates.put(sessionId, false);
         clientReadyStates.put("BOT", true);
         gamelogic.setBotMode(true);
+        // BOT戦開始前にゲームをリセット
+        gamelogic.resetGame();
+        
         System.out.println("BOT戦のセッションを登録しました: " + sessionId);
     }
     public boolean isValidSession(String sessionId) {return clientSessions.containsKey(sessionId);}// セッションIDが有効か確認
@@ -27,7 +30,7 @@ public class GameSessionManager {
         int opponentId = (playerId == 1) ? 2 : 1; // 2人用ゲームを想定
         if (!playerInfoMap.containsKey(opponentId)) {
             System.out.println("対戦相手が見つかりません: playerId=" + playerId);
-            return new PlayerInfo("Computer", 0, 1); // 仮のデフォルトデータを返す
+            return new PlayerInfo("Computer", 0, 0); // 仮のデフォルトデータを返す
         }
         return playerInfoMap.get(opponentId);
     }

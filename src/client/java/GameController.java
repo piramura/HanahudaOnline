@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.*;
 public class GameController {
-    //private OnlineGame onlineGame;
     private GameClient gameClient;
     private List<Integer> field;
     private List<Integer> player1Hands;
@@ -378,7 +377,7 @@ public class GameController {
     private int[] parseRolesFromServer(String roleString) {
         Map<String, Integer> roleMapping = new HashMap<>();
         roleMapping.put("五光", 1);
-        roleMapping.put("雨入り四光", 2);
+        roleMapping.put("雨四光", 2);
         roleMapping.put("四光", 3);
         roleMapping.put("三光", 4);
         roleMapping.put("花見で一杯", 5);
@@ -395,13 +394,12 @@ public class GameController {
         int[] tmproleIds = new int[roles.length];
     
         for (int i = 0; i < roles.length; i++) {
-            String cleanedRole = roles[i].trim(); // **余分なスペースを削除**
-            tmproleIds[i] = roleMapping.getOrDefault(cleanedRole, -1); // マッピングにない場合は `-1` にする
+            String cleanedRole = roles[i].trim(); // 余分なスペースを削除
+            tmproleIds[i] = roleMapping.getOrDefault(cleanedRole, -1); // マッピングにない場合は `-1` にする高得点ボーナスを無視したい。
         }
     
         return tmproleIds;
     }
-
 }
 
 

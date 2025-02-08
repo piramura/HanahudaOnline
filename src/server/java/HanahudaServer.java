@@ -15,9 +15,7 @@ public class HanahudaServer {
     public static void main(String[] args) throws Exception {
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "10030"));
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
-        // ClientSessionManagerを作成し、GameSessionManagerに渡す
         GameSessionManager gameSessionManager = new GameSessionManager();
-
         // エンドポイント設定
         server.createContext("/game/play", new PlayCardHandler(gameSessionManager));
         server.createContext("/game/state", new GameStateHandler(gameSessionManager));
@@ -28,10 +26,7 @@ public class HanahudaServer {
         server.createContext("/game/next", new NextTurnHandler(gameSessionManager));
         server.createContext("/game/player", new PlayerHandler(gameSessionManager));
         server.createContext("/game/result", new GameResultHandler(gameSessionManager));
-
-
-
-
+        
         server.setExecutor(null);
         System.out.println("サーバーがポート " + port + " で起動しました。");
         server.start();

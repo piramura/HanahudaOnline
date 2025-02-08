@@ -14,7 +14,6 @@ public class Deck{
         Card card0 = new Card(cardId++,Card.Month.JANUARY, Card.Point.HIKARI);
         card0.addRole("五光", 10); // 光札の役
         card0.addRole("四光", 8);
-        card0.addRole("雨四光", 7);
         card0.addRole("三光", 5);
         cards.add(card0);
         Card card1 = new Card(cardId++,Card.Month.JANUARY, Card.Point.TANZAKU);
@@ -48,7 +47,6 @@ public class Deck{
         card8.addRole("五光", 10); // 光札の役
         card8.addRole("花見で一杯", 5); // 光札の役
         card8.addRole("四光", 8);
-        card8.addRole("雨四光", 7);
         card8.addRole("三光", 5);
         cards.add(card8);
         Card card9 = new Card(cardId++,Card.Month.MARCH, Card.Point.TANZAKU);
@@ -123,9 +121,8 @@ public class Deck{
         //8
         Card card28 = new Card(cardId++,Card.Month.AUGUST, Card.Point.HIKARI);
         card28.addRole("五光", 10); // 光札の役
-        card28.addRole("月見で一杯", 10); // 光札の役
+        card28.addRole("月見で一杯", 5); // 光札の役
         card28.addRole("四光", 8);
-        card28.addRole("雨四光", 7);
         card28.addRole("三光", 5);
         cards.add(card28);
         Card card29 = new Card(cardId++,Card.Month.AUGUST, Card.Point.TANE);
@@ -139,12 +136,12 @@ public class Deck{
         cards.add(card31);
 
         //9
-        Card card32 = new Card(cardId++,Card.Month.SEPTEMBER, Card.Point.HIKARI);
+        Card card32 = new Card(cardId++,Card.Month.SEPTEMBER, Card.Point.TANE);
         card32.addRole("月見で一杯", 5);
         card32.addRole("花見で一杯", 5);
         card32.addRole("タネ", 1); 
         cards.add(card32);
-        Card card33 = new Card(cardId++,Card.Month.SEPTEMBER, Card.Point.TANE);
+        Card card33 = new Card(cardId++,Card.Month.SEPTEMBER, Card.Point.TANZAKU);
         card33.addRole("青短", 5); 
         card33.addRole("タン", 1);
         cards.add(card33);
@@ -175,6 +172,8 @@ public class Deck{
         Card card40 = new Card(cardId++,Card.Month.NOVEMBER, Card.Point.HIKARI);
         card40.addRole("五光", 10); // 光札の役
         card40.addRole("雨四光", 7);
+        card40.addRole("四光", 8);
+        card40.addRole("三光", 5);
         cards.add(card40);
         Card card41 = new Card(cardId++,Card.Month.NOVEMBER, Card.Point.TANE);
         card41.addRole("タネ", 1); 
@@ -190,7 +189,7 @@ public class Deck{
         Card card44 = new Card(cardId++,Card.Month.DECEMBER, Card.Point.HIKARI);
         card44.addRole("五光", 10); // 光札の役
         card44.addRole("四光", 8);
-        card44.addRole("雨四光", 7);
+        card44.addRole("三光", 5);
         cards.add(card44);
         Card card45 = new Card(cardId++,Card.Month.DECEMBER, Card.Point.KASU);
         card45.addRole("カス", 1); // カス札

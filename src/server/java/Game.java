@@ -15,7 +15,7 @@ public class Game {
         this.field = new Field();
         this.players = new ArrayList<>();
         this.currentPlayerIndex = 0;
-        this.currentTurn = 0;//初期化するときに0か1かランダム
+        this.currentTurn = 0;
         this.playCount = 0;
         this.isEnd = false;
     }
@@ -126,11 +126,6 @@ public class Game {
             System.out.println("次のターンへ。現在のプレイヤー: " + currentPlayerIndex);
         }
     }
-    
-    // private void endGame() {
-    //     System.out.println("GAME_END: 勝者を判定します...");
-    //     // ゲーム終了処理を記述（勝者の判定やリセット処理など）
-    // }
     // デッキの中身を出力する関数
     public void printDeckContents() {
         System.out.println("現在のデッキの中身:");

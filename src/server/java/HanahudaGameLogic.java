@@ -40,8 +40,10 @@ public class HanahudaGameLogic {
         this.game = new Game(deck);
         game.initializeGame(this);
         game.setCurrentPlayerIndex(1);
+
         this.lastScoringPlayer = -1;
         this.isKoiKoiWaiting = false;
+        this.botFinish = false;
         System.out.println("ゲーム開始！ 配札完了！");
     }
    

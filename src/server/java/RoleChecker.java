@@ -13,9 +13,6 @@ public class RoleChecker {
         int taneCount = 0;          // タネ札
         int tanCount = 0;           // 短冊札
         int kasuCount = 0;          // カス札
-        int redAndBlueShortBonus = 0; // 赤短・青短のボーナス
-
-
 
         // プレイヤーの取り札をループ
         for (Card card : player.getCaptures()) {
@@ -81,9 +78,18 @@ public class RoleChecker {
             achievedScores.add(10);
             achievedRoles.add("五光");
         } else if (lightCount == 4) {
-            totalScore += rainyLightCount > 0 ? 7 : 8; // 四光
-            achievedRoles.add(rainyLightCount > 0 ? "雨入り四光" : "四光");
-            achievedScores.add(rainyLightCount > 0 ? 7 : 8);
+            if (lightCount - rainyLightCount == 4) { 
+                // 全ての光札が雨札ではない場合
+                achievedRoles.add("四光");
+                achievedScores.add(8);
+                totalScore += 8;
+            } else {
+                // 1枚以上雨札が含まれる場合
+                achievedRoles.add("雨四光");
+                achievedScores.add(7);
+                totalScore += 7;
+            }
+
         } else if (lightCount - rainyLightCount == 3) {
             totalScore += 5; // 三光
             achievedScores.add(5);

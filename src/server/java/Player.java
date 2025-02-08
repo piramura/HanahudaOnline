@@ -31,39 +31,32 @@ public class Player {
     }
 
     public void addCardToHand(Card card) {
-        hand.add(card);
-        //手札に加える関数。山から配るときしか使わない想定。
-        //花札は減る一方のはず。
+        hand.add(card);//手札に加える関数。
     }
 
     public void captureCard(Card card) {
-        captures.add(card);
-        //カードを場からとる関数。
+        captures.add(card);//カードを場からとる関数。
     }
 
     public Card playCard(int index) {
         if (index < 0 || index >= hand.size()) {
             throw new IllegalArgumentException("不正なカードインデックス: " + index);
         }
-        return hand.remove(index);
-        //手札からカードを出すときに使う。indexで管理することで選べるようにしようとした。
+        return hand.remove(index);//手札からカードを出すときに使う。indexで管理することで選べるようにしようとした。
     }
     public Card removeCaptureCardindex(int index) {
         if (index < 0 || index >= captures.size()) {
             throw new IllegalArgumentException("不正なカードインデックス: " + index);
         }
-        return captures.remove(index);
-        //手札からカードを出すときに使う。indexで管理することで選べるようにしようとした。
+        return captures.remove(index);//手札からカードを出すときに使う。indexで管理することで選べるようにしようとした。
     }
 
-    public ArrayList<Card> getHand() {
+    public ArrayList<Card> getHand() {//手札を取得したいときに使う。
         return hand;
-        //手札を取得したいときに使う。
     }
 
-    public ArrayList<Card> getCaptures() {
+    public ArrayList<Card> getCaptures() {//取り札を取得したいときに使う。
         return captures;
-        //取り札を取得したいときに使う。
     }
     public RoleResult getRoleResult() {
         return roleResult;

@@ -17,7 +17,6 @@ public class GameClient {
     private GameController controller;
     private static final int TURN_DELAY = 3000; // **ターン移行の遅延（3秒）**
 private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     
     public GameClient(String serverUrl) {this.serverUrl = serverUrl;}// コンストラクタでURLを受け取る
     public void setGameController(GameController controller){this.controller = controller;}//GameController
@@ -27,13 +26,11 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             .uri(new URI(serverUrl + endpoint))
             .header("Session-ID", sessionId)
             .header("Content-Type", "text/plain");
-    
         if ("POST".equalsIgnoreCase(method)) {
             builder.POST(HttpRequest.BodyPublishers.ofString(body == null ? "" : body)); // nullを空文字に置き換え
         } else if ("GET".equalsIgnoreCase(method)) {
             builder.GET();
         }
-    
         return builder.build();
     }
     
@@ -62,6 +59,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
             throw new RuntimeException("プレイヤーID取得エラー: " + response.statusCode());
         }
     }
+
     public void sendPlayerInfo(String playerName, int iconNum, int level) throws Exception {//自分の情報を送る　POST
         String message = String.format("%s:%d:%d", playerName, iconNum, level);
         HttpRequest request = buildRequest("/game/player", "POST", message);
@@ -194,6 +192,7 @@ private static final ScheduledExecutorService scheduler = Executors.newScheduled
                 return null;
             });
     }
+    
     //ここからPlayCardの補助関数
     private void continueYourTurn(){
         try{
